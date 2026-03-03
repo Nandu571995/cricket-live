@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🏏 Cricket Live — Railway Deployment
 
 Real-time cricket game with live Cricbuzz scraping. Open the link on any phone/PC/OBS.
@@ -33,3 +34,6 @@ Just open the Railway URL in Chrome on your phone. Done.
 - `GET /api/live` — all live matches
 - `GET /api/scorecard/:matchId` — batting/bowling details  
 - `GET /api/status` — server health
+=======
+# cricket-live
+>>>>>>> 467a01843f3a2fb816506d57852a6ab241670136
