@@ -1,0 +1,2014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cricket Codex 3D</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Orbitron:wght@700;900&family=Bebas+Neue&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Rajdhani',sans-serif;color:#fff}
+
+/* ════════════════════════ MENU ════════════════════════ */
+#menuScreen{
+  position:fixed;inset:0;z-index:500;
+  background:linear-gradient(160deg,#04060f 0%,#080e1c 60%,#04060f 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:opacity .7s ease;
+}
+#menuScreen.gone{opacity:0;pointer-events:none}
+.m-logo{
+  font-family:'Orbitron',monospace;font-size:clamp(2rem,5vw,4.2rem);font-weight:900;
+  letter-spacing:.1em;text-align:center;
+  background:linear-gradient(135deg,#00cfff 0%,#FFD700 45%,#FF6B00 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 40px rgba(0,207,255,.3));
+  animation:logoPulse 3s ease-in-out infinite;
+}
+@keyframes logoPulse{0%,100%{filter:drop-shadow(0 0 30px rgba(0,207,255,.3))}50%{filter:drop-shadow(0 0 60px rgba(255,107,0,.5))}}
+.m-sub{font-size:.95rem;color:rgba(255,255,255,.4);letter-spacing:.4em;text-transform:uppercase;margin:8px 0 32px}
+.setup-card{
+  background:rgba(255,255,255,.03);border:1px solid rgba(0,207,255,.15);
+  border-radius:18px;padding:32px 40px;width:min(720px,96vw);
+  backdrop-filter:blur(20px);
+  box-shadow:0 0 80px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.06);
+}
+.sc-label{font-size:.7rem;color:#00cfff;letter-spacing:.25em;text-transform:uppercase;font-weight:700;margin-bottom:8px;display:block}
+.fmt-row{display:flex;gap:8px;margin-bottom:24px}
+.fmt-tab{
+  flex:1;padding:9px 6px;text-align:center;cursor:pointer;font-weight:700;
+  font-size:.9rem;letter-spacing:.06em;border-radius:8px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
+  transition:all .2s;color:rgba(255,255,255,.55);
+}
+.fmt-tab.on{background:rgba(0,207,255,.12);border-color:#00cfff;color:#00cfff}
+.fmt-tab:hover:not(.on){background:rgba(255,255,255,.07);color:#fff}
+.team-row{display:grid;grid-template-columns:1fr 50px 1fr;gap:14px;align-items:center;margin-bottom:24px}
+.vs{font-family:'Orbitron',monospace;font-size:1.3rem;font-weight:900;color:#FFD700;text-align:center}
+.t-sel{
+  width:100%;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.15);
+  border-radius:9px;color:#fff;padding:10px 12px;font-family:'Rajdhani',sans-serif;
+  font-size:1rem;font-weight:600;outline:none;cursor:pointer;
+}
+.t-sel:focus{border-color:#00cfff}
+.t-sel option{background:#111}
+.mid-row{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+.mid-field{flex:1;min-width:120px}
+.mid-sel{
+  width:100%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);
+  border-radius:7px;color:#fff;padding:9px 11px;font-family:'Rajdhani',sans-serif;
+  font-size:.9rem;outline:none;cursor:pointer;
+}
+.live-row{
+  display:flex;align-items:center;gap:12px;margin-bottom:24px;
+  background:rgba(0,0,0,.3);border-radius:9px;padding:12px 16px;
+  border:1px solid rgba(255,255,255,.06);
+}
+.ldot{width:9px;height:9px;border-radius:50%;background:#333;transition:background .3s}
+.ldot.on{background:#00E676;box-shadow:0 0 8px #00E676;animation:lblink 1.5s infinite}
+@keyframes lblink{0%,100%{opacity:1}50%{opacity:.4}}
+.ltxt{flex:1;font-size:.85rem;color:rgba(255,255,255,.55)}
+.ltxt b{color:#fff}
+.mid-id{
+  background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);border-radius:7px;
+  color:#fff;padding:8px 12px;font-family:'Rajdhani',sans-serif;font-size:.95rem;outline:none;width:130px;
+}
+.mid-id::placeholder{color:rgba(255,255,255,.2)}
+.mid-id:focus{border-color:#00E676}
+.go-btn{
+  width:100%;padding:16px;border:none;border-radius:11px;cursor:pointer;
+  font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:700;letter-spacing:.15em;
+  background:linear-gradient(135deg,#005fcc,#0099ff,#00ccff);
+  color:#fff;box-shadow:0 4px 28px rgba(0,153,255,.4);transition:all .2s;
+  overflow:hidden;position:relative;
+}
+.go-btn:hover{transform:translateY(-2px);box-shadow:0 8px 40px rgba(0,153,255,.6)}
+
+/* ════════════════════════ GAME WRAPPER ════════════════════════ */
+#gameWrap{position:fixed;inset:0;display:none}
+#c3d{display:block;width:100%;height:100%}
+
+/* ════════════════════════ TOP SCOREBAR (exact screenshot) ════════════════════════ */
+#topBar{
+  position:fixed;top:0;left:0;right:0;height:110px;z-index:200;
+  display:grid;grid-template-columns:1fr 260px 1fr;
+  background:linear-gradient(180deg,rgba(3,8,22,.98) 0%,rgba(5,12,32,.95) 100%);
+  box-shadow:0 0 0 1px rgba(255,255,255,.05) inset,0 6px 50px rgba(0,0,0,.9);
+  display:none;
+}
+#topBar::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:5px;
+  background:linear-gradient(90deg,#0030CC 0%,#0070FF 12%,#00B4FF 25%,rgba(220,240,255,.9) 46%,#fff 50%,rgba(255,200,180,.9) 54%,#FF4040 75%,#E8001D 88%,#CC0020 100%);
+  box-shadow:0 0 10px rgba(0,100,255,.8),0 0 10px rgba(255,0,40,.8);
+  animation:tbGlow 3s ease-in-out infinite alternate;
+}
+@keyframes tbGlow{
+  0%{box-shadow:0 0 12px 2px rgba(0,100,255,1),0 0 32px 4px rgba(0,100,255,.5),0 0 6px 1px rgba(255,0,40,.4),0 0 18px 2px rgba(255,0,40,.2)}
+  100%{box-shadow:0 0 6px 1px rgba(0,100,255,.4),0 0 18px 2px rgba(0,100,255,.2),0 0 12px 2px rgba(255,0,40,1),0 0 32px 4px rgba(255,0,40,.5)}
+}
+#topBar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,rgba(0,100,255,.5) 0%,rgba(255,255,255,.1) 50%,rgba(255,0,40,.5) 100%)}
+.tb-side{display:flex;align-items:center;gap:14px;padding:0 18px;position:relative;overflow:hidden}
+.tb-side.l{background:linear-gradient(120deg,rgba(0,60,200,.18) 0%,transparent 55%)}
+.tb-side.r{flex-direction:row-reverse;background:linear-gradient(240deg,rgba(220,0,30,.18) 0%,transparent 55%)}
+.tb-flag{position:relative;width:76px;height:76px;flex-shrink:0}
+.tb-fring{position:absolute;inset:-3px;border-radius:50%;animation:frspin 4s linear infinite}
+.tb-fring.bl{background:conic-gradient(#0050FF 0%,#00CFFF 40%,transparent 60%,#0050FF 100%)}
+.tb-fring.rd{background:conic-gradient(#E8001D 0%,#FF6B00 40%,transparent 60%,#E8001D 100%)}
+@keyframes frspin{to{transform:rotate(360deg)}}
+.tb-finner{position:absolute;inset:3px;border-radius:50%;overflow:hidden;background:#05101e;z-index:1;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:inset 0 2px 10px rgba(0,0,0,.7)}
+.tb-finner img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.tb-info{display:flex;flex-direction:column;justify-content:center;gap:1px}
+.tb-info.r{align-items:flex-end}
+.tb-tname{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;letter-spacing:3px;text-transform:uppercase;line-height:1}
+.tb-tname.l{color:#93C5FD;text-shadow:0 0 14px rgba(0,100,255,.6)}
+.tb-tname.r{color:#FCA5A5;text-shadow:0 0 14px rgba(255,0,40,.6)}
+.tb-score{font-family:'Bebas Neue';font-size:62px;line-height:.95;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.8),0 0 24px rgba(255,255,255,.1);letter-spacing:2px}
+.tb-overs{font-family:'Teko',sans-serif;font-size:20px;line-height:1;color:rgba(255,255,255,.42);letter-spacing:1.5px}
+.tb-center{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  position:relative;overflow:hidden;
+  background:linear-gradient(180deg,rgba(0,25,8,.96),rgba(0,15,5,.99));
+  border-left:1px solid rgba(0,100,255,.18);border-right:1px solid rgba(255,0,40,.18);
+}
+.tb-center::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(0,200,80,.07),transparent 65%);pointer-events:none}
+.tb-pill{
+  font-family:'Orbitron',sans-serif;font-size:11px;font-weight:900;letter-spacing:2px;padding:4px 16px;border-radius:20px;position:relative;z-index:1;
+}
+.pill-live{background:linear-gradient(135deg,#B91C1C,#DC2626);box-shadow:0 0 18px rgba(220,38,38,.9);animation:lpulse 1.8s ease-in-out infinite}
+@keyframes lpulse{0%,100%{box-shadow:0 0 18px rgba(220,38,38,.9)}50%{box-shadow:0 0 34px rgba(255,50,50,1),0 0 60px rgba(220,38,38,.5)}}
+.pill-break{background:linear-gradient(135deg,#1E3A8A,#1D4ED8);box-shadow:0 0 14px rgba(30,58,138,.8)}
+.pill-win{background:linear-gradient(135deg,#065F46,#059669);box-shadow:0 0 14px rgba(5,150,105,.8)}
+.tb-crr{font-family:'Teko',sans-serif;font-size:26px;color:#00E676;letter-spacing:1.5px;position:relative;z-index:1;text-shadow:0 0 12px rgba(0,230,118,.5)}
+.tb-fmt{font-family:'Orbitron',sans-serif;font-size:8px;color:rgba(255,255,255,.28);letter-spacing:2px;position:relative;z-index:1}
+
+/* second row under top bar */
+#bar2{
+  position:fixed;top:110px;left:0;right:0;height:30px;z-index:200;
+  display:flex;align-items:center;padding:0 0;
+  background:rgba(2,5,18,.95);border-bottom:1px solid rgba(255,255,255,.07);
+  display:none;
+}
+.b2-seg{
+  display:flex;align-items:center;padding:0 14px;height:100%;
+  border-right:1px solid rgba(255,255,255,.07);
+  font-family:'Teko',sans-serif;font-size:15px;letter-spacing:.5px;
+  white-space:nowrap;flex-shrink:0;
+}
+.b2-lbl{color:rgba(255,215,0,.7);font-size:12px;letter-spacing:1px;margin-right:5px}
+.b2-val{color:#fff;font-weight:600}
+.b2-val.g{color:#00E676}
+.b2-val.b{color:#93C5FD}
+.b2-val.o{color:#FF6B00}
+.b2-val.r{color:#ff5555}
+.b2-need{flex:1;text-align:center;color:#FFD700;font-family:'Teko',sans-serif;font-size:15px;letter-spacing:.5px}
+
+/* third row — over balls */
+#bar3{
+  position:fixed;top:140px;left:0;right:0;height:36px;z-index:200;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background:rgba(1,4,14,.9);border-bottom:1px solid rgba(255,255,255,.06);
+  display:none;
+}
+.b3-label{font-family:'Orbitron',sans-serif;font-size:9px;color:#FF6B00;letter-spacing:1.5px}
+.b3-balls{display:flex;gap:5px;align-items:center}
+.ob{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:12px;transition:all .35s}
+.ob-dot{background:rgba(255,255,255,.04);color:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.1)}
+.ob-0{background:rgba(255,255,255,.07);color:rgba(255,255,255,.38);border:1.5px solid rgba(255,255,255,.15)}
+.ob-1,.ob-2,.ob-3{background:linear-gradient(135deg,#1B5E20,#2E7D32);color:#fff;border:1.5px solid #4CAF50}
+.ob-4{background:linear-gradient(135deg,#E65100,#F57C00);color:#fff;border:1.5px solid #FFD700;box-shadow:0 0 9px rgba(255,109,0,.6)}
+.ob-6{background:linear-gradient(135deg,#7B0000,#C62828);color:#fff;border:1.5px solid #EF5350;box-shadow:0 0 12px rgba(198,40,40,.8)}
+.ob-W{background:linear-gradient(135deg,#6A0036,#AD1457);color:#fff;border:1.5px solid #E91E63;box-shadow:0 0 12px rgba(173,20,87,.8)}
+.ob-WD,.ob-NB{background:linear-gradient(135deg,#311B92,#6A1FC2);color:#fff;border:1.5px solid #9C27B0}
+.b3-tot{font-family:'Bebas Neue';font-size:18px;color:#FFD700}
+
+/* ════════════════════════ BOTTOM PLAYER PANELS ════════════════════════ */
+#bottomBar{
+  position:fixed;bottom:0;left:0;right:0;height:200px;z-index:200;
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  background:rgba(255,220,230,.06);
+  border-top:3px solid rgba(255,180,200,.2);
+  backdrop-filter:blur(16px);
+  display:none;
+}
+/* pink tint */
+#bottomBar::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,192,203,.08) 0%,rgba(255,200,210,.06) 100%);
+  pointer-events:none;
+}
+.bp{
+  display:flex;align-items:stretch;position:relative;overflow:hidden;
+  border-right:1px solid rgba(255,255,255,.06);padding:0;
+}
+.bp:last-child{border-right:none}
+.bp-photo{
+  width:130px;flex-shrink:0;position:relative;overflow:hidden;
+}
+.bp-photo-bg{
+  position:absolute;inset:0;
+  background:linear-gradient(160deg,#FF6B00 0%,#e65000 40%,#222 100%);
+}
+.bp-photo-bg.bowl{background:linear-gradient(160deg,#CC0020 0%,#880013 40%,#111 100%)}
+.bp-photo-inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.bp-photo-inner img{width:100%;height:100%;object-fit:cover;object-position:top center;position:absolute;top:0;left:0;}
+.bp-photo-inner .bp-emoji{font-size:5rem;line-height:1;padding-bottom:10px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.7))}
+.bp-portrait-canvas{width:100%;height:100%;display:block;}
+/* spinning conic ring on photo */
+.bp-spin{
+  position:absolute;inset:-2px;border-radius:4px;
+  animation:bpspin 3s linear infinite;z-index:5;pointer-events:none;
+  background:conic-gradient(transparent 0%,rgba(255,215,0,.7) 20%,transparent 40%);
+}
+.bp-spin.bl{background:conic-gradient(transparent 0%,rgba(0,207,255,.7) 20%,transparent 40%)}
+@keyframes bpspin{to{transform:rotate(360deg)}}
+.bp-data{flex:1;display:flex;flex-direction:column;padding:14px 14px 10px;position:relative;z-index:2}
+.bp-role{
+  font-family:'Orbitron',sans-serif;font-size:9px;font-weight:900;letter-spacing:2px;
+  padding:3px 10px;border-radius:20px;margin-bottom:8px;align-self:flex-start;
+}
+.bp-role.bat{background:linear-gradient(90deg,#FF6B00,#FFD700);color:#000}
+.bp-role.ns{background:linear-gradient(90deg,#78350F,#B45309);color:#fff}
+.bp-role.bowl{background:linear-gradient(90deg,#7C3AED,#00CFFF);color:#fff}
+.bp-name{
+  font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;
+  color:#fff;text-transform:uppercase;letter-spacing:.8px;line-height:1.2;margin-bottom:4px;
+}
+.bp-bignum{font-family:'Bebas Neue';font-size:40px;line-height:1;margin-bottom:4px}
+.bp-bignum.bat{color:#FFD700;text-shadow:0 0 14px rgba(255,215,0,.4)}
+.bp-bignum.bowl{color:#93C5FD;text-shadow:0 0 14px rgba(0,200,255,.4)}
+.bp-stats{display:flex;gap:10px;margin-top:auto;background:rgba(0,0,0,.28);border-radius:6px;padding:5px 8px}
+.bps{display:flex;flex-direction:column;align-items:center;min-width:34px}
+.bps-l{font-size:8px;color:rgba(255,215,0,.65);font-weight:700;letter-spacing:1px;font-family:'Teko',sans-serif}
+.bps-l.b{color:rgba(0,200,255,.65)}
+.bps-v{font-family:'Bebas Neue';font-size:22px;line-height:1;color:#fff}
+
+/* ════════════════════════ SHOT BANNER ════════════════════════ */
+#shotBanner{
+  position:fixed;top:45%;left:50%;transform:translate(-50%,-50%);
+  text-align:center;pointer-events:none;opacity:0;z-index:300;
+  transition:opacity .2s;
+}
+#shotBanner.show{opacity:1}
+#shotTxt{font-family:'Bebas Neue';font-size:6rem;letter-spacing:.1em;text-shadow:0 0 40px currentColor;line-height:1}
+#shotSub{font-size:1.1rem;color:rgba(255,255,255,.7);letter-spacing:.3em;text-transform:uppercase;margin-top:4px}
+
+/* ════════════════════════ CAM + SHOT CONTROLS ════════════════════════ */
+#camCtrl{position:fixed;right:14px;bottom:220px;display:flex;flex-direction:column;gap:7px;z-index:201;display:none}
+.cbtn{
+  background:rgba(4,8,22,.88);border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;color:rgba(255,255,255,.6);padding:7px 11px;
+  cursor:pointer;font-size:.78rem;font-weight:700;letter-spacing:.04em;
+  transition:all .2s;text-align:center;min-width:88px;
+}
+.cbtn:hover,.cbtn.on{background:rgba(0,207,255,.12);border-color:#00cfff;color:#00cfff}
+
+#shotCtrl{position:fixed;bottom:210px;left:50%;transform:translateX(-50%);z-index:201;text-align:center;display:none}
+.sc-inst{font-size:.7rem;color:rgba(255,255,255,.3);letter-spacing:.15em;text-transform:uppercase;margin-bottom:5px}
+.pwr-wrap{width:160px;height:5px;background:rgba(255,255,255,.08);border-radius:3px;margin:0 auto 9px;overflow:hidden}
+.pwr-fill{height:100%;width:0;border-radius:3px;background:linear-gradient(90deg,#00E676,#FFD700,#FF6B00);transition:width .04s}
+.shot-btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;max-width:340px}
+.sbtn{
+  background:rgba(4,8,22,.92);border:1px solid rgba(255,255,255,.14);
+  border-radius:9px;color:#fff;padding:9px 14px;cursor:pointer;
+  font-family:'Rajdhani',sans-serif;font-size:.88rem;font-weight:700;
+  transition:all .15s;letter-spacing:.04em;
+}
+.sbtn:hover{background:rgba(0,207,255,.14);border-color:#00cfff;transform:scale(1.04)}
+.sbtn:active{transform:scale(.96)}
+
+/* live indicator */
+#liveInd{position:fixed;top:180px;right:14px;display:flex;align-items:center;gap:7px;background:rgba(4,8,22,.88);border:1px solid rgba(0,230,118,.2);border-radius:7px;padding:5px 11px;z-index:202;display:none}
+.li-dot{width:8px;height:8px;border-radius:50%;background:#00E676;box-shadow:0 0 8px #00E676;animation:lblink 1.5s infinite}
+.li-txt{font-size:.68rem;letter-spacing:.14em;color:rgba(255,255,255,.55);text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ MENU ══════════════════ -->
+<div id="menuScreen">
+  <div class="m-logo">Cricket Codex 3D</div>
+  <div class="m-sub">Live Match Engine · Cricbuzz Data · Cricket 24 Style</div>
+  <div class="setup-card">
+    <span class="sc-label">Competition</span>
+    <div class="fmt-row" id="compRow">
+      <div class="fmt-tab on" data-v="national" onclick="setComp('national',this)">🌐 International</div>
+      <div class="fmt-tab" data-v="ipl" onclick="setComp('ipl',this)">🏆 IPL</div>
+    </div>
+    <div class="team-row">
+      <div>
+        <span class="sc-label">Batting Team</span>
+        <select class="t-sel" id="selA"></select>
+      </div>
+      <div class="vs">VS</div>
+      <div>
+        <span class="sc-label">Bowling Team</span>
+        <select class="t-sel" id="selB"></select>
+      </div>
+    </div>
+    <div class="mid-row">
+      <div class="mid-field"><span class="sc-label">Format</span>
+        <select class="mid-sel" id="selFmt">
+          <option>T20</option><option>ODI</option><option>Test</option><option>T10</option>
+        </select>
+      </div>
+      <div class="mid-field"><span class="sc-label">Camera</span>
+        <select class="mid-sel" id="selCam">
+          <option value="broadcast">Broadcast</option>
+          <option value="batting">Batsman</option>
+          <option value="bowling">Bowler End</option>
+          <option value="aerial">Aerial</option>
+        </select>
+      </div>
+    </div>
+    <div class="live-row">
+      <div class="ldot" id="ldot"></div>
+      <div class="ltxt"><b>Cricbuzz Live</b> — Paste match ID or full URL for real-time scores &amp; player photos</div>
+      <input type="text" class="mid-id" id="midInput" placeholder="Match ID / URL" oninput="onMidInput()">
+    </div>
+    <button class="go-btn" onclick="startGame()">▶ PLAY</button>
+  </div>
+</div>
+
+<!-- ══════════════════ 3D CANVAS ══════════════════ -->
+<div id="gameWrap">
+  <canvas id="c3d"></canvas>
+</div>
+
+<!-- ══════════════════ TOP SCOREBAR (3 rows) ══════════════════ -->
+<div id="topBar">
+  <div class="tb-side l">
+    <div class="tb-flag">
+      <div class="tb-fring bl"></div>
+      <div class="tb-finner" id="flag1">🏏</div>
+    </div>
+    <div class="tb-info">
+      <div class="tb-tname l" id="tname1">TEAM 1</div>
+      <div class="tb-score" id="tscore1">—</div>
+      <div class="tb-overs" id="tovers1"></div>
+    </div>
+  </div>
+  <div class="tb-center">
+    <div class="tb-pill pill-live" id="sbadge">LIVE</div>
+    <div class="tb-crr">CRR <span id="sCRR">—</span></div>
+    <div class="tb-fmt" id="sFmt">T20</div>
+  </div>
+  <div class="tb-side r">
+    <div class="tb-flag">
+      <div class="tb-fring rd"></div>
+      <div class="tb-finner" id="flag2">🏏</div>
+    </div>
+    <div class="tb-info r">
+      <div class="tb-tname r" id="tname2">TEAM 2</div>
+      <div class="tb-score" id="tscore2">—</div>
+      <div class="tb-overs" id="tovers2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Row 2: CRR / RRR / Partnership / Need -->
+<div id="bar2">
+  <div class="b2-seg"><span class="b2-lbl">LAST-W:</span><span class="b2-val r" id="b2lw" style="max-width:200px;overflow:hidden;text-overflow:ellipsis"></span></div>
+  <div class="b2-seg"><span class="b2-lbl">CRR:</span><span class="b2-val g" id="b2crr">—</span></div>
+  <div class="b2-seg"><span class="b2-lbl">RRR:</span><span class="b2-val o" id="b2rrr">—</span></div>
+  <div class="b2-seg"><span class="b2-lbl">P'SHIP:</span><span class="b2-val b" id="b2pship">—</span></div>
+  <div class="b2-need" id="b2need"></div>
+</div>
+
+<!-- Row 3: Over balls -->
+<div id="bar3">
+  <span class="b3-label" id="b3lbl">THIS OVER:</span>
+  <div class="b3-balls" id="b3balls"></div>
+  <span class="b3-tot">= <span id="b3tot">0</span></span>
+</div>
+
+<!-- ══════════════════ BOTTOM PLAYER PANELS ══════════════════ -->
+<div id="bottomBar">
+  <!-- Batsman 1 -->
+  <div class="bp">
+    <div class="bp-photo">
+      <div class="bp-photo-bg"></div>
+      <div class="bp-spin"></div>
+      <div class="bp-photo-inner" id="b1photo"><canvas id="portrait1" class="bp-portrait-canvas" width="130" height="200"></canvas></div>
+    </div>
+    <div class="bp-data">
+      <div class="bp-role bat" id="b1role">⚡ BATSMAN</div>
+      <div class="bp-name" id="b1name">BATSMAN 1</div>
+      <div class="bp-bignum bat" id="b1big">0(0)</div>
+      <div class="bp-stats">
+        <div class="bps"><div class="bps-l">4S</div><div class="bps-v" id="b1f">0</div></div>
+        <div class="bps"><div class="bps-l">6S</div><div class="bps-v" id="b1s">0</div></div>
+        <div class="bps"><div class="bps-l">SR</div><div class="bps-v" id="b1sr">—</div></div>
+      </div>
+    </div>
+  </div>
+  <!-- Batsman 2 -->
+  <div class="bp">
+    <div class="bp-photo">
+      <div class="bp-photo-bg"></div>
+      <div class="bp-spin" style="animation-direction:reverse"></div>
+      <div class="bp-photo-inner" id="b2photo"><canvas id="portrait2" class="bp-portrait-canvas" width="130" height="200"></canvas></div>
+    </div>
+    <div class="bp-data">
+      <div class="bp-role ns" id="b2role">NON-STRIKE</div>
+      <div class="bp-name" id="b2name">BATSMAN 2</div>
+      <div class="bp-bignum bat" id="b2big">0(0)</div>
+      <div class="bp-stats">
+        <div class="bps"><div class="bps-l">4S</div><div class="bps-v" id="b2f">0</div></div>
+        <div class="bps"><div class="bps-l">6S</div><div class="bps-v" id="b2s">0</div></div>
+        <div class="bps"><div class="bps-l">SR</div><div class="bps-v" id="b2sr">—</div></div>
+      </div>
+    </div>
+  </div>
+  <!-- Bowler -->
+  <div class="bp">
+    <div class="bp-photo">
+      <div class="bp-photo-bg bowl"></div>
+      <div class="bp-spin bl"></div>
+      <div class="bp-photo-inner" id="bwphoto"><canvas id="portrait3" class="bp-portrait-canvas" width="130" height="200"></canvas></div>
+    </div>
+    <div class="bp-data">
+      <div class="bp-role bowl">🎯 BOWLER</div>
+      <div class="bp-name" id="bwname">BOWLER</div>
+      <div class="bp-bignum bowl" id="bwbig">0-0(0)</div>
+      <div class="bp-stats">
+        <div class="bps"><div class="bps-l b">OV</div><div class="bps-v" id="bwov">0</div></div>
+        <div class="bps"><div class="bps-l b">MN</div><div class="bps-v" id="bwmn">0</div></div>
+        <div class="bps"><div class="bps-l b">ECO</div><div class="bps-v" id="bweco">—</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Shot banner -->
+<div id="shotBanner"><div id="shotTxt">SIX!</div><div id="shotSub"></div></div>
+
+<!-- Camera controls -->
+<div id="camCtrl">
+  <div class="cbtn on" id="cbBcast" onclick="setCamera('broadcast')">📺 Broadcast</div>
+  <div class="cbtn" id="cbBat" onclick="setCamera('batting')">🏏 Batsman</div>
+  <div class="cbtn" id="cbBowl" onclick="setCamera('bowling')">🎯 Bowler</div>
+  <div class="cbtn" id="cbAerial" onclick="setCamera('aerial')">🚁 Aerial</div>
+  <div class="cbtn" id="cbClose" onclick="setCamera('closeup')">🔍 Close-up</div>
+</div>
+
+<!-- Shot controls -->
+<div id="shotCtrl">
+  <div class="sc-inst">CHOOSE YOUR SHOT</div>
+  <div class="pwr-wrap"><div class="pwr-fill" id="pwrFill"></div></div>
+  <div class="shot-btns">
+    <div class="sbtn" onclick="playShot('drive')">Cover Drive</div>
+    <div class="sbtn" onclick="playShot('pull')">Pull Shot</div>
+    <div class="sbtn" onclick="playShot('sweep')">Sweep</div>
+    <div class="sbtn" onclick="playShot('cut')">Cut Shot</div>
+    <div class="sbtn" onclick="playShot('loft')">Lofted Six</div>
+    <div class="sbtn" onclick="playShot('defence')">Defend</div>
+  </div>
+</div>
+
+<!-- Live indicator -->
+<div id="liveInd"><div class="li-dot"></div><div class="li-txt" id="liTxt">Connecting...</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════
+//  TEAM DATA
+// ═══════════════════════════════════════════════════════
+const NAT=[
+  {name:'India',flag:'🇮🇳',c1:0x003087,c2:0xFFFFFF,acc:0xFF8200},
+  {name:'Australia',flag:'🇦🇺',c1:0xFFCC00,c2:0x006400,acc:0xFFCC00},
+  {name:'England',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',c1:0x003087,c2:0xFFFFFF,acc:0xCC0000},
+  {name:'Pakistan',flag:'🇵🇰',c1:0x006400,c2:0xFFFFFF,acc:0x008000},
+  {name:'New Zealand',flag:'🇳🇿',c1:0x000000,c2:0xFFFFFF,acc:0xAAAAAA},
+  {name:'South Africa',flag:'🇿🇦',c1:0x007A4D,c2:0xFFB81C,acc:0xDE3831},
+  {name:'Sri Lanka',flag:'🇱🇰',c1:0x003087,c2:0xFFD700,acc:0x8B0000},
+  {name:'Bangladesh',flag:'🇧🇩',c1:0x006A4E,c2:0xFFFFFF,acc:0xF42A41},
+  {name:'Afghanistan',flag:'🇦🇫',c1:0x002D62,c2:0xFFFFFF,acc:0xD32011},
+  {name:'West Indies',flag:'🏴',c1:0x7B0041,c2:0xFFD700,acc:0xFFD700},
+  {name:'Zimbabwe',flag:'🇿🇼',c1:0x006400,c2:0xFFD700,acc:0xFF0000},
+  {name:'Ireland',flag:'🇮🇪',c1:0x169B62,c2:0xFFFFFF,acc:0xFF8200},
+  {name:'Scotland',flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',c1:0x003087,c2:0xFFFFFF,acc:0x003087},
+  {name:'Netherlands',flag:'🇳🇱',c1:0xFF6600,c2:0xFFFFFF,acc:0xFF6600},
+  {name:'UAE',flag:'🇦🇪',c1:0x00732F,c2:0xFFFFFF,acc:0xFF0000},
+  {name:'Nepal',flag:'🇳🇵',c1:0x003087,c2:0xFF0000,acc:0x003087},
+  {name:'Oman',flag:'🇴🇲',c1:0x008000,c2:0xFFFFFF,acc:0xFF0000},
+  {name:'Papua NG',flag:'🇵🇬',c1:0x000000,c2:0xFFD700,acc:0xFF0000},
+  {name:'Canada',flag:'🇨🇦',c1:0xFF0000,c2:0xFFFFFF,acc:0xFF0000},
+  {name:'USA',flag:'🇺🇸',c1:0x002868,c2:0xFFFFFF,acc:0xBF0A30},
+];
+const IPL=[
+  {name:'Chennai Super Kings',flag:'🦁',c1:0xFFCC00,c2:0x003087,acc:0xFFCC00},
+  {name:'Mumbai Indians',flag:'🔵',c1:0x004BA0,c2:0xFFD700,acc:0x004BA0},
+  {name:'Royal Challengers',flag:'🔴',c1:0xEC1C24,c2:0x000000,acc:0xFFD700},
+  {name:'Kolkata KR',flag:'🟣',c1:0x3A225D,c2:0xFFD700,acc:0x3A225D},
+  {name:'Sunrisers Hyd',flag:'🟠',c1:0xFF6600,c2:0x000000,acc:0xFF6600},
+  {name:'Rajasthan Royals',flag:'🩷',c1:0xE91E8C,c2:0x254AA5,acc:0xE91E8C},
+  {name:'Delhi Capitals',flag:'🔵',c1:0x0078BC,c2:0xFF3333,acc:0x0078BC},
+  {name:'Punjab Kings',flag:'🟡',c1:0xED1B24,c2:0xFFD700,acc:0xED1B24},
+  {name:'Lucknow SG',flag:'🔵',c1:0x00B2E3,c2:0xFFFFFF,acc:0x3B1D7E},
+  {name:'Gujarat Titans',flag:'🔵',c1:0x1B3D6B,c2:0xBFD6E9,acc:0x1B3D6B},
+];
+
+let G={comp:'national',teamA:NAT[0],teamB:NAT[1],fmt:'T20',cam:'broadcast',matchId:'',live:false};
+let liveData={};
+
+function populateTeams(){
+  const list=G.comp==='national'?NAT:IPL;
+  const sA=document.getElementById('selA'),sB=document.getElementById('selB');
+  sA.innerHTML=sB.innerHTML='';
+  list.forEach((t,i)=>{
+    const o=`<option value="${i}">${t.flag} ${t.name}</option>`;
+    sA.innerHTML+=o; sB.innerHTML+=o;
+  });
+  sB.selectedIndex=1;
+}
+function setComp(v,el){
+  G.comp=v;
+  document.querySelectorAll('.fmt-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  populateTeams();
+}
+function onMidInput(){
+  const v=document.getElementById('midInput').value.trim();
+  document.getElementById('ldot').className='ldot'+(v?' on':'');
+}
+populateTeams();
+
+function startGame(){
+  const list=G.comp==='national'?NAT:IPL;
+  const iA=parseInt(document.getElementById('selA').value);
+  const iB=parseInt(document.getElementById('selB').value);
+  if(iA===iB){alert('Pick different teams');return}
+  G.teamA=list[iA]; G.teamB=list[iB];
+  G.fmt=document.getElementById('selFmt').value;
+  G.cam=document.getElementById('selCam').value;
+  const raw=document.getElementById('midInput').value.trim();
+  G.matchId=(raw.match(/\d{4,}/)||[''])[0];
+  G.live=!!G.matchId;
+
+  const m=document.getElementById('menuScreen');
+  m.classList.add('gone');
+  setTimeout(()=>{
+    m.style.display='none';
+    document.getElementById('gameWrap').style.display='block';
+    ['topBar','bar2','bar3','bottomBar','camCtrl','shotCtrl'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el)el.style.display='';
+    });
+    if(G.live){
+      document.getElementById('liveInd').style.display='flex';
+      startLive();
+    } else {
+      document.getElementById('shotCtrl').style.display='block';
+      initSim();
+    }
+    init3D();
+    initHUD();
+    initPortraits();
+    updatePortraitColors(G.teamA,G.teamB);
+  },700);
+}
+
+// ═══════════════════════════════════════════════════════
+//  THREE.JS 3D ENGINE — Cricket 24 style
+// ═══════════════════════════════════════════════════════
+let renderer,scene,cam3,clock3,animId;
+let playerModels={bat1:null,bat2:null,bowler:null,wk:null,fielders:[]};
+let ballMesh,ballTrail=[];
+let ballAnim={on:false,t:0,start:new THREE.Vector3(),end:new THREE.Vector3(),h:0};
+let camT={on:false,t:0,fp:new THREE.Vector3(),fl:new THREE.Vector3(),tp:new THREE.Vector3(),tl:new THREE.Vector3()};
+let bowlAnimT={on:false,t:0};
+let batAnimT={on:false,t:0,type:''};
+let celebT={on:false,t:0,type:''};
+let idleT=0;
+
+const CAM_PRESETS={
+  broadcast:{pos:new THREE.Vector3(22,14,10),look:new THREE.Vector3(0,0.8,0)},
+  batting:  {pos:new THREE.Vector3(1.5,3.2,9),look:new THREE.Vector3(0,1.2,-6)},
+  bowling:  {pos:new THREE.Vector3(-1,2.5,-26),look:new THREE.Vector3(0,1.2,0)},
+  aerial:   {pos:new THREE.Vector3(0,55,4),look:new THREE.Vector3(0,0,0)},
+  closeup:  {pos:new THREE.Vector3(4,3.5,4),look:new THREE.Vector3(0,1.5,0)},
+};
+
+function init3D(){
+  const canvas=document.getElementById('c3d');
+  renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.15;
+
+  scene=new THREE.Scene();
+  scene.fog=new THREE.FogExp2(0x87CEEB,0.007);
+  clock3=new THREE.Clock();
+
+  cam3=new THREE.PerspectiveCamera(58,window.innerWidth/window.innerHeight,0.1,800);
+  setCamera(G.cam,true);
+
+  // Lighting
+  scene.add(new THREE.AmbientLight(0xfff4e0,0.55));
+  const sun=new THREE.DirectionalLight(0xfffae0,2.2);
+  sun.position.set(40,70,25);
+  sun.castShadow=true;
+  sun.shadow.mapSize.set(4096,4096);
+  sun.shadow.camera.near=1;sun.shadow.camera.far=250;
+  sun.shadow.camera.left=-80;sun.shadow.camera.right=80;
+  sun.shadow.camera.top=80;sun.shadow.camera.bottom=-80;
+  scene.add(sun);
+  const fill=new THREE.DirectionalLight(0xaad4ff,0.45);
+  fill.position.set(-25,25,-15);scene.add(fill);
+  const bounce=new THREE.DirectionalLight(0x88ff88,0.12);
+  bounce.position.set(0,-1,0);scene.add(bounce);
+
+  buildSky();
+  buildGround();
+  buildPitch();
+  buildStumpsGroup(0,0,2.6,true);
+  buildStumpsGroup(0,0,-22.4,false);
+  buildBoundaryRope();
+  buildStadium();
+  buildFloodlights();
+
+  // Players — doubled size (scale 2)
+  playerModels.bat1=createHuman(G.teamA.c1,G.teamA.c2,'bat');
+  playerModels.bat1.position.set(-0.4,0,1.4);
+  playerModels.bat1.scale.setScalar(2.0);
+  scene.add(playerModels.bat1);
+
+  playerModels.bat2=createHuman(G.teamA.c1,G.teamA.c2,'bat');
+  playerModels.bat2.position.set(0.6,0,-2.2);
+  playerModels.bat2.rotation.y=Math.PI;
+  playerModels.bat2.scale.setScalar(2.0);
+  scene.add(playerModels.bat2);
+
+  playerModels.bowler=createHuman(G.teamB.c1,G.teamB.c2,'bowl');
+  playerModels.bowler.position.set(0,0,-20);
+  playerModels.bowler.scale.setScalar(2.0);
+  scene.add(playerModels.bowler);
+
+  playerModels.wk=createHuman(G.teamB.c1,G.teamB.c2,'wk');
+  playerModels.wk.position.set(0,0,4.2);
+  playerModels.wk.rotation.y=Math.PI;
+  playerModels.wk.scale.setScalar(2.0);
+  scene.add(playerModels.wk);
+
+  // Umpire — doubled size, white coat
+  const ump=createHuman(0xFFFFFF,0x333333,'ump');
+  ump.position.set(2.5,0,0.2);
+  ump.scale.setScalar(2.0);
+  scene.add(ump);
+  const ump2=createHuman(0xFFFFFF,0x333333,'ump');
+  ump2.position.set(0,0,-26);
+  ump2.scale.setScalar(2.0);
+  scene.add(ump2);
+
+  // Fielders
+  const fPos=[
+    [-14,0,-9],[14,0,-9],[-20,0,8],[20,0,8],
+    [-10,0,-32],[10,0,-32],[0,0,-42],[-24,0,-22],[24,0,-22],[5,0,30]
+  ];
+  fPos.forEach(([x,y,z])=>{
+    const f=createHuman(G.teamB.c1,G.teamB.c2,'field');
+    f.position.set(x,y,z);
+    f.rotation.y=Math.atan2(-x,-z);
+    f.scale.setScalar(2.0);
+    scene.add(f);
+    playerModels.fielders.push(f);
+  });
+
+  // Ball
+  const bGeo=new THREE.SphereGeometry(0.038,20,16);
+  const bMat=new THREE.MeshStandardMaterial({color:0xCC2200,roughness:0.55,metalness:0.1});
+  ballMesh=new THREE.Mesh(bGeo,bMat);
+  ballMesh.castShadow=true;
+  ballMesh.position.set(0,0.038,-20);
+  scene.add(ballMesh);
+
+  window.addEventListener('resize',onResize3d);
+  render3d();
+}
+
+// ─── Sky dome with gradient ───
+function buildSky(){
+  const geo=new THREE.SphereGeometry(400,32,16);
+  const mat=new THREE.ShaderMaterial({
+    uniforms:{topColor:{value:new THREE.Color(0x1a6cb5)},botColor:{value:new THREE.Color(0x87CEEB)}},
+    vertexShader:`varying float vY;void main(){vY=position.y;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
+    fragmentShader:`uniform vec3 topColor,botColor;varying float vY;void main(){float t=clamp(vY/300.0,0.,1.);gl_FragColor=vec4(mix(botColor,topColor,t),1.);}`,
+    side:THREE.BackSide
+  });
+  scene.add(new THREE.Mesh(geo,mat));
+  // Clouds
+  for(let i=0;i<14;i++){
+    const g=new THREE.Group();
+    const n=3+Math.floor(Math.random()*4);
+    for(let j=0;j<n;j++){
+      const r=4+Math.random()*5;
+      const cm=new THREE.Mesh(new THREE.SphereGeometry(r,8,6),new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.75}));
+      cm.position.set(j*5-n*2.5,(Math.random()-.5)*3,Math.random()*4);
+      g.add(cm);
+    }
+    const a=(i/14)*Math.PI*2;
+    const d=90+Math.random()*120;
+    g.position.set(Math.cos(a)*d,45+Math.random()*35,Math.sin(a)*d);
+    scene.add(g);
+  }
+}
+
+// ─── Ground — lush green with mow stripes ───
+function buildGround(){
+  // Main oval — vivid green
+  const geo=new THREE.CircleGeometry(72,80);
+  const mat=new THREE.MeshStandardMaterial({color:0x2e8b1a,roughness:.88});
+  const ground=new THREE.Mesh(geo,mat);
+  ground.rotation.x=-Math.PI/2;
+  ground.receiveShadow=true;
+  scene.add(ground);
+
+  // Darker outer ring
+  const ring=new THREE.Mesh(new THREE.RingGeometry(30,71,80),new THREE.MeshStandardMaterial({color:0x226a12,roughness:.9}));
+  ring.rotation.x=-Math.PI/2;ring.position.y=.001;scene.add(ring);
+
+  // Mowing stripes — alternating light/dark green
+  for(let i=0;i<18;i++){
+    const stripe=new THREE.Mesh(
+      new THREE.PlaneGeometry(6,145),
+      new THREE.MeshStandardMaterial({color:i%2===0?0x2e8b1a:0x38a820,roughness:.9})
+    );
+    stripe.rotation.x=-Math.PI/2;
+    stripe.position.set(-50+i*6,.003,0);
+    scene.add(stripe);
+  }
+
+  // 30-yard circle (dashed via ring)
+  const circleM=new THREE.Mesh(
+    new THREE.RingGeometry(23.5,24,80),
+    new THREE.MeshBasicMaterial({color:0xffffff,opacity:.5,transparent:true})
+  );
+  circleM.rotation.x=-Math.PI/2;circleM.position.y=.005;scene.add(circleM);
+
+  // Boundary rope
+  const bdPoints=[];
+  for(let i=0;i<=80;i++){const a=(i/80)*Math.PI*2;bdPoints.push(new THREE.Vector3(Math.cos(a)*70,.08,Math.sin(a)*70));}
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(bdPoints),new THREE.LineBasicMaterial({color:0xffffff,linewidth:3})));
+
+  // Boundary boards — colourful
+  for(let i=0;i<24;i++){
+    const a=(i/24)*Math.PI*2;
+    const brd=new THREE.Mesh(new THREE.BoxGeometry(5,1.8,.25),new THREE.MeshStandardMaterial({color:i%2===0?0x0044BB:0xFFCC00}));
+    brd.position.set(Math.cos(a)*72,.9,Math.sin(a)*72);
+    brd.rotation.y=-a;
+    scene.add(brd);
+  }
+}
+
+// ─── Pitch — sandy with grain ───
+function buildPitch(){
+  const mat=new THREE.MeshStandardMaterial({color:0xC8A050,roughness:.95});
+  const pitch=new THREE.Mesh(new THREE.BoxGeometry(3.05,0.01,21.95),mat);
+  pitch.position.set(0,.006,-10);
+  pitch.receiveShadow=true;
+  scene.add(pitch);
+
+  // Crease lines
+  const wMat=new THREE.MeshBasicMaterial({color:0xffffff});
+  const creases=[
+    {x:0,z:2.5,w:4.5,d:.06},{x:0,z:-22.5,w:4.5,d:.06},
+    {x:0,z:1.5,w:4.5,d:.04},{x:0,z:-21.4,w:4.5,d:.04},
+  ];
+  creases.forEach(({x,z,w,d})=>{
+    const c=new THREE.Mesh(new THREE.BoxGeometry(w,.015,d),wMat);
+    c.position.set(x,.012,z);scene.add(c);
+  });
+}
+
+// ─── Stumps with bails ───
+function buildStumpsGroup(x,y,z,facingDown){
+  const sMat=new THREE.MeshStandardMaterial({color:0xFFFAE0,roughness:.6});
+  const bMat=new THREE.MeshStandardMaterial({color:0xFFCC00,roughness:.5,metalness:.2});
+  const g=new THREE.Group();
+  [-0.115,0,0.115].forEach(ox=>{
+    const s=new THREE.Mesh(new THREE.CylinderGeometry(.019,.019,.75,10),sMat);
+    s.position.set(ox,.375,0);s.castShadow=true;g.add(s);
+  });
+  // Bails
+  [-0.058,.058].forEach(bx=>{
+    const b=new THREE.Mesh(new THREE.CylinderGeometry(.011,.011,.115,8),bMat);
+    b.rotation.z=Math.PI/2;b.position.set(bx,.756,0);g.add(b);
+  });
+  g.position.set(x,y,z);
+  if(!facingDown) g.rotation.y=0;
+  scene.add(g);
+  return g;
+}
+
+// ─── Stadium — full with stands, roofs, crowd ───
+function buildStadium(){
+  const standAngles=8;
+  for(let i=0;i<standAngles;i++){
+    const a=(i/standAngles)*Math.PI*2;
+    const sg=new THREE.Group();
+
+    // Stand base
+    const base=new THREE.Mesh(new THREE.BoxGeometry(22,10,8),new THREE.MeshStandardMaterial({color:0x888899,roughness:.9}));
+    base.position.y=5;sg.add(base);
+
+    // Seating rows — 4 tiers
+    for(let row=0;row<4;row++){
+      for(let seat=0;seat<22;seat++){
+        const p=new THREE.Mesh(new THREE.SphereGeometry(.35,6,6),new THREE.MeshBasicMaterial({
+          color:new THREE.Color().setHSL(Math.random()<.5?(Math.random()*.1+.05):(Math.random()*.6+.3),.8,.4+(Math.random()*.3))
+        }));
+        p.position.set(-10.5+seat*.95,1.5+row*1.3,3);
+        sg.add(p);
+      }
+    }
+
+    // Canopy roof
+    const roof=new THREE.Mesh(new THREE.BoxGeometry(24,.6,9),new THREE.MeshStandardMaterial({color:0x446699,roughness:.7}));
+    roof.position.y=10.4;sg.add(roof);
+
+    // Roof edge lip
+    const lip=new THREE.Mesh(new THREE.BoxGeometry(24,.2,1),new THREE.MeshStandardMaterial({color:0x3355aa}));
+    lip.position.set(0,10.4,4.5);sg.add(lip);
+
+    sg.position.set(Math.cos(a)*85,0,Math.sin(a)*85);
+    sg.rotation.y=-a;
+    scene.add(sg);
+  }
+
+  // Press box / scoreboard tower
+  const sb=new THREE.Mesh(new THREE.BoxGeometry(16,18,5),new THREE.MeshStandardMaterial({color:0x222233}));
+  sb.position.set(0,9,-90);scene.add(sb);
+  const sbScreen=new THREE.Mesh(new THREE.BoxGeometry(14,10,.2),new THREE.MeshStandardMaterial({color:0x001122,emissive:0x002244,emissiveIntensity:.5}));
+  sbScreen.position.set(0,14,-87.5);scene.add(sbScreen);
+}
+
+// ─── Floodlights ───
+function buildFloodlights(){
+  [[-72,72],[ 72,72],[-72,-72],[72,-72]].forEach(([x,z])=>{
+    const pole=new THREE.Mesh(new THREE.CylinderGeometry(.5,.7,45,8),new THREE.MeshStandardMaterial({color:0x888888}));
+    pole.position.set(x,22.5,z);scene.add(pole);
+    const head=new THREE.Mesh(new THREE.BoxGeometry(8,1.2,4),new THREE.MeshBasicMaterial({color:0xfff8e0}));
+    head.position.set(x,45.5,z);scene.add(head);
+    const pl=new THREE.PointLight(0xfffae0,.35,140);
+    pl.position.set(x,46,z);scene.add(pl);
+  });
+}
+
+function buildBoundaryRope(){
+  // Already in buildGround — extra decorative inner ring
+  const pts=[];
+  for(let i=0;i<=80;i++){const a=(i/80)*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(a)*23.5,.07,Math.sin(a)*23.5));}
+  scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xffffff,opacity:.4,transparent:true})));
+}
+
+// ═══════════════════════════════════════════════════════
+//  HUMAN MODEL — Cricket 24 style doubled size
+//  Scale is set to 2 on the group, so base height ~1.8 units
+// ═══════════════════════════════════════════════════════
+function createHuman(shirtCol,pantsCol,role){
+  const g=new THREE.Group();
+  const skin=new THREE.MeshStandardMaterial({color:0xC68642,roughness:.65});
+  const shirt=new THREE.MeshStandardMaterial({color:shirtCol,roughness:.75});
+  const pants=new THREE.MeshStandardMaterial({color:pantsCol===0xFFFFFF?0xE8E8E0:pantsCol,roughness:.85});
+  const shoe=new THREE.MeshStandardMaterial({color:0xfefefe,roughness:.7});
+  const hair=new THREE.MeshStandardMaterial({color:0x1a0a00,roughness:.9});
+
+  // === BODY PARTS — exact anatomical proportions ===
+
+  // Torso — wider, more defined
+  const torso=new THREE.Mesh(new THREE.BoxGeometry(.44,.56,.24),shirt);
+  torso.position.y=1.06;torso.castShadow=true;g.add(torso);
+
+  // Chest bump
+  const chest=new THREE.Mesh(new THREE.BoxGeometry(.38,.22,.12),shirt);
+  chest.position.set(0,1.2,.16);g.add(chest);
+
+  // Waist taper
+  const waist=new THREE.Mesh(new THREE.BoxGeometry(.36,.18,.2),shirt);
+  waist.position.y=.84;g.add(waist);
+
+  // Pelvis / shorts
+  const pelvis=new THREE.Mesh(new THREE.BoxGeometry(.42,.2,.22),pants);
+  pelvis.position.y=.74;g.add(pelvis);
+
+  // === HEAD — detailed ===
+  const headGrp=new THREE.Group();headGrp.position.y=1.64;g.add(headGrp);
+
+  // Skull
+  const skull=new THREE.Mesh(new THREE.SphereGeometry(.145,20,16),skin);
+  skull.castShadow=true;headGrp.add(skull);
+
+  // Face — slight flatten
+  const face=new THREE.Mesh(new THREE.SphereGeometry(.125,16,12),skin);
+  face.position.z=.04;face.scale.z=.75;headGrp.add(face);
+
+  // Hair cap
+  const hairMesh=new THREE.Mesh(new THREE.SphereGeometry(.148,16,10,0,Math.PI*2,0,Math.PI*.58),hair);
+  headGrp.add(hairMesh);
+
+  // Eyebrows
+  [-.045,.045].forEach(x=>{
+    const eb=new THREE.Mesh(new THREE.BoxGeometry(.04,.008,.01),hair);
+    eb.position.set(x,.06,.13);headGrp.add(eb);
+  });
+
+  // Eyes
+  [-.045,.045].forEach(x=>{
+    const eye=new THREE.Mesh(new THREE.SphereGeometry(.022,8,8),new THREE.MeshBasicMaterial({color:0x1a0a00}));
+    eye.position.set(x,.025,.13);headGrp.add(eye);
+    const shine=new THREE.Mesh(new THREE.SphereGeometry(.008,6,6),new THREE.MeshBasicMaterial({color:0xffffff}));
+    shine.position.set(x+.008,.03,.14);headGrp.add(shine);
+  });
+
+  // Nose
+  const nose=new THREE.Mesh(new THREE.BoxGeometry(.025,.035,.04),skin);
+  nose.position.set(0,-.01,.148);headGrp.add(nose);
+
+  // Mouth line
+  const mouth=new THREE.Mesh(new THREE.BoxGeometry(.055,.008,.01),new THREE.MeshBasicMaterial({color:0x8B4513}));
+  mouth.position.set(0,-.045,.14);headGrp.add(mouth);
+
+  // Ears
+  [-.145,.145].forEach(x=>{
+    const ear=new THREE.Mesh(new THREE.SphereGeometry(.025,8,8),skin);
+    ear.scale.z=.6;ear.position.set(x,.01,0);headGrp.add(ear);
+  });
+
+  // Neck — prominent
+  const neck=new THREE.Mesh(new THREE.CylinderGeometry(.06,.075,.14,10),skin);
+  neck.position.y=1.47;g.add(neck);
+  const collar=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,.04,10),shirt);
+  collar.position.y=1.53;g.add(collar);
+
+  // === ARMS ===
+  // Left upper arm
+  const lUA=new THREE.Mesh(new THREE.CylinderGeometry(.07,.065,.3,10),shirt);
+  lUA.rotation.z=.28;lUA.position.set(-.285,1.12,0);lUA.castShadow=true;g.add(lUA);
+  // Left elbow
+  const lElb=new THREE.Mesh(new THREE.SphereGeometry(.068,8,8),shirt);
+  lElb.position.set(-.335,.94,0);g.add(lElb);
+  // Left lower arm
+  const lLA=new THREE.Mesh(new THREE.CylinderGeometry(.058,.05,.28,10),skin);
+  lLA.rotation.z=.2;lLA.position.set(-.375,.77,0);g.add(lLA);
+  // Left hand
+  const lHand=new THREE.Mesh(new THREE.SphereGeometry(.068,10,10),skin);
+  lHand.position.set(-.42,.61,0);g.add(lHand);
+  // Left fingers (4 tiny cylinders)
+  for(let fi=0;fi<4;fi++){
+    const fng=new THREE.Mesh(new THREE.CylinderGeometry(.012,.01,.06,6),skin);
+    fng.position.set(-.38+fi*.015,.55,.03-(fi*.01));
+    g.add(fng);
+  }
+
+  // Right upper arm
+  const rUA=new THREE.Mesh(new THREE.CylinderGeometry(.07,.065,.3,10),shirt);
+  rUA.rotation.z=-.28;rUA.position.set(.285,1.12,0);rUA.castShadow=true;g.add(rUA);
+  // Right elbow
+  const rElb=new THREE.Mesh(new THREE.SphereGeometry(.068,8,8),shirt);
+  rElb.position.set(.335,.94,0);g.add(rElb);
+  // Right lower arm
+  const rLA=new THREE.Mesh(new THREE.CylinderGeometry(.058,.05,.28,10),skin);
+  rLA.rotation.z=-.2;rLA.position.set(.375,.77,0);g.add(rLA);
+  // Right hand
+  const rHand=new THREE.Mesh(new THREE.SphereGeometry(.068,10,10),skin);
+  rHand.position.set(.42,.61,0);g.add(rHand);
+
+  // === LEGS ===
+  const legData=[
+    {x:-.1,phase:0},{x:.1,phase:Math.PI}
+  ];
+  const legGrps=[];
+  legData.forEach(({x})=>{
+    const lg=new THREE.Group();
+    // Upper leg (thigh)
+    const thigh=new THREE.Mesh(new THREE.CylinderGeometry(.09,.082,.38,10),pants);
+    thigh.position.y=-.19;thigh.castShadow=true;lg.add(thigh);
+    // Knee
+    const knee=new THREE.Mesh(new THREE.SphereGeometry(.086,8,8),pants);
+    knee.position.y=-.38;lg.add(knee);
+    // Lower leg (shin)
+    const shin=new THREE.Mesh(new THREE.CylinderGeometry(.07,.058,.38,10),pants);
+    shin.position.y=-.57;lg.add(shin);
+    // Ankle
+    const ankle=new THREE.Mesh(new THREE.SphereGeometry(.062,8,8),shoe);
+    ankle.position.y=-.76;lg.add(ankle);
+    // Foot / shoe
+    const foot=new THREE.Mesh(new THREE.BoxGeometry(.13,.07,.22),shoe);
+    foot.position.set(0,-.81,.04);lg.add(foot);
+    // Shoe tip
+    const tip=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),shoe);
+    tip.scale.set(1,.5,1.3);tip.position.set(0,-.81,.12);lg.add(tip);
+
+    lg.position.set(x,.58,0);
+    g.add(lg);
+    legGrps.push(lg);
+  });
+
+  // === ROLE-SPECIFIC GEAR ===
+  if(role==='bat'||role==='wk'){
+    // Helmet
+    const helMat=new THREE.MeshStandardMaterial({color:shirtCol,roughness:.35,metalness:.25});
+    const helm=new THREE.Mesh(new THREE.SphereGeometry(.158,16,12,0,Math.PI*2,0,Math.PI*.72),helMat);
+    helm.position.y=1.64;g.add(helm);
+    // Grille
+    const gMat=new THREE.MeshStandardMaterial({color:0x333333,roughness:.4,metalness:.6});
+    for(let gi=-2;gi<=2;gi++){
+      const gBar=new THREE.Mesh(new THREE.BoxGeometry(.008,.12,.12),gMat);
+      gBar.position.set(gi*.04,1.52,.16);g.add(gBar);
+    }
+    // Helmet peak
+    const peak=new THREE.Mesh(new THREE.BoxGeometry(.32,.04,.14),helMat);
+    peak.position.set(0,1.54,.155);g.add(peak);
+
+    // Pads on legs
+    const padMat=new THREE.MeshStandardMaterial({color:0xFFFFF0,roughness:.9});
+    [-.1,.1].forEach(px=>{
+      const pad=new THREE.Mesh(new THREE.BoxGeometry(.15,.46,.12),padMat);
+      pad.position.set(px,.4,.1);g.add(pad);
+      // Pad straps
+      for(let ps=0;ps<3;ps++){
+        const strap=new THREE.Mesh(new THREE.BoxGeometry(.16,.018,.13),new THREE.MeshStandardMaterial({color:0xAAAAAA}));
+        strap.position.set(px,.2+ps*.14,.1);g.add(strap);
+      }
+    });
+
+    // Batting gloves
+    const glvMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.7});
+    const rGlv=new THREE.Mesh(new THREE.SphereGeometry(.078,10,10),glvMat);
+    rGlv.position.set(.42,.61,0);g.add(rGlv);
+    const lGlv=new THREE.Mesh(new THREE.SphereGeometry(.078,10,10),glvMat);
+    lGlv.position.set(-.42,.61,0);g.add(lGlv);
+  }
+
+  if(role==='bat'){
+    // Bat — cricket bat with blade + handle
+    const batGrp=new THREE.Group();
+    // Blade
+    const blade=new THREE.Mesh(new THREE.BoxGeometry(.11,.45,.04),new THREE.MeshStandardMaterial({color:0xDEB887,roughness:.9}));
+    blade.position.y=-.2;batGrp.add(blade);
+    // Blade edges (thicker middle)
+    const mid=new THREE.Mesh(new THREE.BoxGeometry(.09,.3,.06),new THREE.MeshStandardMaterial({color:0xC8A060,roughness:.9}));
+    mid.position.y=-.18;batGrp.add(mid);
+    // Handle
+    const handle=new THREE.Mesh(new THREE.CylinderGeometry(.02,.02,.3,8),new THREE.MeshStandardMaterial({color:0x8B4513}));
+    handle.position.y=.15;batGrp.add(handle);
+    // Grip
+    const grip=new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.24,8),new THREE.MeshStandardMaterial({color:0x222222,roughness:.5}));
+    grip.position.y=.15;batGrp.add(grip);
+    // Grip bands
+    for(let gb=0;gb<6;gb++){
+      const band=new THREE.Mesh(new THREE.CylinderGeometry(.026,.026,.018,8),new THREE.MeshStandardMaterial({color:0x444444}));
+      band.position.y=.04+gb*.036;batGrp.add(band);
+    }
+
+    batGrp.position.set(.45,.52,.08);
+    batGrp.rotation.x=.22;
+    batGrp.rotation.z=-.14;
+    g.add(batGrp);
+    g.userData.bat=batGrp;
+
+    // Arm bone refs for swing
+    g.userData.rUA=rUA;g.userData.rLA=rLA;g.userData.rHand=rHand;
+    g.userData.lUA=lUA;g.userData.lLA=lLA;g.userData.lHand=lHand;
+  }
+
+  if(role==='bowl'){
+    // Bowling arm lifted
+    rUA.rotation.z=-1.3;rUA.position.set(.2,1.26,0);
+    rLA.rotation.z=-1.6;rLA.position.set(.15,1.5,-.04);
+    rHand.position.set(.1,1.68,-.08);
+    // Ball in hand
+    const hball=new THREE.Mesh(new THREE.SphereGeometry(.038,12,12),new THREE.MeshStandardMaterial({color:0xCC2200,roughness:.55}));
+    hball.position.set(.1,1.72,-.08);
+    g.add(hball);
+    g.userData.hball=hball;
+    g.userData.rUA=rUA;g.userData.rLA=rLA;g.userData.rHand=rHand;
+  }
+
+  if(role==='wk'){
+    // WK crouching gloves bigger
+    const wkgMat=new THREE.MeshStandardMaterial({color:0xffffff,roughness:.6});
+    const wkgL=new THREE.Mesh(new THREE.SphereGeometry(.1,10,10),wkgMat);
+    wkgL.position.set(-.42,.61,0);g.add(wkgL);
+    const wkgR=new THREE.Mesh(new THREE.SphereGeometry(.1,10,10),wkgMat);
+    wkgR.position.set(.42,.61,0);g.add(wkgR);
+  }
+
+  if(role==='ump'){
+    // White coat — already shirt col is white
+    // Hat
+    const hatBrim=new THREE.Mesh(new THREE.CylinderGeometry(.19,.19,.03,12),new THREE.MeshStandardMaterial({color:0x222222}));
+    hatBrim.position.y=1.81;g.add(hatBrim);
+    const hatTop=new THREE.Mesh(new THREE.CylinderGeometry(.14,.16,.12,12),new THREE.MeshStandardMaterial({color:0x222222}));
+    hatTop.position.y=1.88;g.add(hatTop);
+    // White coat lapels
+    [-.06,.06].forEach(x=>{
+      const lapel=new THREE.Mesh(new THREE.BoxGeometry(.055,.25,.04),new THREE.MeshStandardMaterial({color:0xfafafa}));
+      lapel.position.set(x,1.08,.12);lapel.rotation.z=x>0?-.15:.15;g.add(lapel);
+    });
+  }
+
+  // Ground shadow disc
+  const shad=new THREE.Mesh(new THREE.CircleGeometry(.28,16),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.38}));
+  shad.rotation.x=-Math.PI/2;shad.position.y=.002;g.add(shad);
+
+  // Store refs
+  g.userData.role=role;
+  g.userData.lUA=lUA;g.userData.rUA=rUA;
+  g.userData.lLA=lLA;g.userData.rLA=rLA;
+  g.userData.legs=legGrps;
+  g.userData.headGrp=headGrp;
+
+  return g;
+}
+
+// ═══════════════════════════════════════════════════════
+//  CAMERA
+// ═══════════════════════════════════════════════════════
+function setCamera(type,instant=false){
+  G.cam=type;
+  document.querySelectorAll('.cbtn').forEach(b=>b.classList.remove('on'));
+  const names={broadcast:'cbBcast',batting:'cbBat',bowling:'cbBowl',aerial:'cbAerial',closeup:'cbClose'};
+  const el=document.getElementById(names[type]);if(el)el.classList.add('on');
+  const p=CAM_PRESETS[type]||CAM_PRESETS.broadcast;
+  if(instant||!cam3){if(cam3){cam3.position.copy(p.pos);cam3.lookAt(p.look);}return;}
+  camT.on=true;camT.t=0;camT.fp.copy(cam3.position);
+  camT.fl.set(0,1,0);camT.tp.copy(p.pos);camT.tl.copy(p.look);
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER LOOP
+// ═══════════════════════════════════════════════════════
+function render3d(){
+  animId=requestAnimationFrame(render3d);
+  const dt=Math.min(clock3.getDelta(),.05);
+  idleT+=dt;
+
+  // Camera transition
+  if(camT.on){
+    camT.t+=dt*1.6;
+    const t=Math.min(camT.t,1);
+    const e=t<.5?2*t*t:-1+(4-2*t)*t;
+    cam3.position.lerpVectors(camT.fp,camT.tp,e);
+    cam3.lookAt(new THREE.Vector3().lerpVectors(camT.fl,camT.tl,e));
+    if(t>=1)camT.on=false;
+  }
+
+  // Ball trajectory
+  if(ballAnim.on){
+    ballAnim.t+=dt*.85;
+    const t=Math.min(ballAnim.t,1);
+    ballMesh.position.lerpVectors(ballAnim.start,ballAnim.end,t);
+    ballMesh.position.y=ballAnim.start.y*(1-t)+ballAnim.end.y*t+Math.sin(t*Math.PI)*ballAnim.h;
+    // Spin the ball
+    ballMesh.rotation.x+=dt*25;
+    if(t>=1)ballAnim.on=false;
+  }
+
+  // Bowling run-up & delivery
+  if(bowlAnimT.on){
+    bowlAnimT.t+=dt*2.8;
+    const t=Math.min(bowlAnimT.t,1);
+    const bw=playerModels.bowler;
+    if(bw){
+      const rUA=bw.userData.rUA,rLA=bw.userData.rLA,rHand=bw.userData.rHand;
+      const legs=bw.userData.legs;
+      if(t<.35){
+        // Run-up
+        bw.position.z=-20+t/.35*2;
+        if(legs&&legs[0]){legs[0].rotation.x=Math.sin(t*20)*.45;legs[1].rotation.x=-Math.sin(t*20)*.45;}
+        if(rUA){rUA.rotation.z=-1.3-t*1.5;}
+      } else if(t<.65){
+        // Delivery stride
+        const tt=(t-.35)/.3;
+        if(rUA){rUA.rotation.z=-1.3-1.5+tt*4;}
+        bw.position.z=-18+tt*2.5;
+      } else {
+        // Follow-through
+        const tt=(t-.65)/.35;
+        if(rUA){rUA.rotation.z=2.2-tt*3.5;}
+        bw.position.z=-15.5+tt*(-4.5);
+      }
+      if(t>=1){
+        bowlAnimT.on=false;
+        bw.position.z=-20;
+        if(rUA){rUA.rotation.z=-1.3;}
+      }
+    }
+  }
+
+  // Bat swing animation
+  if(batAnimT.on){
+    batAnimT.t+=dt*3.2;
+    const t=Math.min(batAnimT.t,1);
+    const bm=playerModels.bat1;
+    if(bm){
+      const bat=bm.userData.bat;
+      const rUA=bm.userData.rUA,lUA=bm.userData.lUA;
+      if(batAnimT.type==='drive'||batAnimT.type==='loft'){
+        // Front foot drive
+        if(t<.3){
+          if(bat){bat.rotation.x=-.3+t/.3*(-1.2);bat.rotation.z=-.14+t/.3*-.3;}
+          if(rUA){rUA.rotation.z=-.28-t/.3*.6;}
+          if(lUA){lUA.rotation.z=.28+t/.3*.5;}
+        } else if(t<.6){
+          const tt=(t-.3)/.3;
+          if(bat){bat.rotation.x=-1.5+tt*2.2;bat.rotation.z=-.44+tt*.5;}
+          if(rUA){rUA.rotation.z=-.88+tt*1.4;}
+        } else {
+          const tt=(t-.6)/.4;
+          if(bat){bat.rotation.x=.7-tt*.9;bat.rotation.z=.06-tt*.2;}
+          if(rUA){rUA.rotation.z=.52-tt*.8;}
+        }
+      } else if(batAnimT.type==='pull'){
+        // Pull shot — horizontal swing
+        if(t<.35){
+          if(bat){bat.rotation.x=-.5;bat.rotation.y=-t/.35*1.8;bat.rotation.z=-.3;}
+          if(rUA){rUA.rotation.z=-.28-t/.35*.4;rUA.rotation.x=t/.35*.5;}
+        } else if(t<.65){
+          const tt=(t-.35)/.3;
+          if(bat){bat.rotation.y=-1.8+tt*3.6;bat.rotation.z=-.3+tt*.6;}
+          if(rUA){rUA.rotation.z=-.68+tt*1.2;rUA.rotation.x=.5-tt*.4;}
+        } else {
+          const tt=(t-.65)/.35;
+          if(bat){bat.rotation.y=1.8-tt*2.2;bat.rotation.z=.3-tt*.44;}
+          if(rUA){rUA.rotation.z=.52-tt*.8;}
+        }
+      } else if(batAnimT.type==='cut'){
+        // Late cut — quick horizontal
+        if(t<.4){
+          if(bat){bat.rotation.z=.2+t/.4*1.0;bat.rotation.y=t/.4*.8;}
+          if(rUA){rUA.rotation.z=-.28+t/.4*1.2;}
+        } else {
+          const tt=(t-.4)/.6;
+          if(bat){bat.rotation.z=1.2-tt*1.4;bat.rotation.y=.8-tt*1.0;}
+          if(rUA){rUA.rotation.z=.92-tt*1.2;}
+        }
+      } else if(batAnimT.type==='defence'){
+        // Forward defend
+        if(t<.4){
+          if(bat){bat.rotation.x=-t/.4*.6;bat.rotation.z=-.14;}
+          if(rUA){rUA.rotation.z=-.28-t/.4*.2;}
+        } else {
+          const tt=(t-.4)/.6;
+          if(bat){bat.rotation.x=-.6+tt*.6;}
+          if(rUA){rUA.rotation.z=-.48+tt*.2;}
+        }
+      }
+      if(t>=1){
+        batAnimT.on=false;
+        // Reset bat
+        if(bat){bat.rotation.set(.22,0,-.14);bat.position.set(.45,.52,.08);}
+        if(rUA){rUA.rotation.set(0,0,-.28);rUA.position.set(.285,1.12,0);}
+        if(lUA){lUA.rotation.set(0,0,.28);lUA.position.set(-.285,1.12,0);}
+      }
+    }
+  }
+
+  // Celebration
+  if(celebT.on){
+    celebT.t+=dt*2;
+    const t=Math.min(celebT.t,1);
+    const bm=playerModels.bat1;
+    if(bm){
+      if(celebT.type==='six'||celebT.type==='four'){
+        bm.position.y=Math.sin(t*Math.PI*3)*.3;
+        bm.rotation.y+=dt*4;
+        const rUA=bm.userData.rUA,lUA=bm.userData.lUA;
+        if(rUA){rUA.rotation.z=-.28-Math.sin(t*Math.PI*3)*.8;}
+        if(lUA){lUA.rotation.z=.28+Math.sin(t*Math.PI*3)*.8;}
+      } else if(celebT.type==='wicket'){
+        // Bowler celebrates
+        const bw=playerModels.bowler;
+        if(bw){
+          bw.position.y=Math.sin(t*Math.PI*2)*.4;
+          const rUA=bw.userData.rUA;
+          if(rUA){rUA.rotation.z=-1.3-Math.sin(t*Math.PI*4)*1.2;}
+        }
+      }
+      if(t>=1){celebT.on=false;bm.position.y=0;bm.rotation.y=0;}
+    }
+  }
+
+  // Idle animations
+  animIdle(playerModels.bat1,idleT,0,'bat');
+  animIdle(playerModels.bat2,idleT,1.1,'bat');
+  animIdle(playerModels.bowler,idleT,.6,'bowl');
+  animIdle(playerModels.wk,idleT,.3,'wk');
+  playerModels.fielders.forEach((f,i)=>animIdle(f,idleT,i*.4,'field'));
+
+  renderer.render(scene,cam3);
+}
+
+function animIdle(m,t,off,role){
+  if(!m||batAnimT.on||bowlAnimT.on||celebT.on) return;
+  const head=m.userData.headGrp;
+  const lUA=m.userData.lUA,rUA=m.userData.rUA;
+  const legs=m.userData.legs;
+
+  // Breathing
+  if(m.children[0]) m.children[0].scale.y=1+Math.sin((t+off)*1.5)*.012;
+
+  // Head look-around
+  if(head) head.rotation.y=Math.sin((t+off)*.4)*.15;
+
+  if(role==='field'&&!batAnimT.on&&!bowlAnimT.on){
+    // Fielder weight shift
+    const s=Math.sin((t+off)*.9)*.03;
+    if(legs&&legs[0]){legs[0].rotation.x=s;legs[1].rotation.x=-s;}
+    if(lUA) lUA.rotation.x=Math.sin((t+off)*.9)*.05;
+    if(rUA) rUA.rotation.x=-Math.sin((t+off)*.9)*.05;
+  }
+  if(role==='bat'&&!batAnimT.on){
+    // Bat tap on ground
+    const bat=m.userData.bat;
+    if(bat) bat.rotation.x=.22+Math.sin((t+off)*2.2)*.04;
+  }
+  if(role==='wk'){
+    // WK ready crouch
+    if(m.scale.y>0) m.scale.y=1-Math.abs(Math.sin((t+off)*1.2))*.05;
+  }
+}
+
+function onResize3d(){
+  if(!renderer)return;
+  cam3.aspect=window.innerWidth/window.innerHeight;
+  cam3.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth,window.innerHeight);
+}
+
+// ═══════════════════════════════════════════════════════
+//  SHOT GAMEPLAY (simulation mode only)
+// ═══════════════════════════════════════════════════════
+const SHOTS={
+  drive:[
+    {r:4,w:false,desc:'Cracking cover drive to the boundary! FOUR!'},
+    {r:2,w:false,desc:'Punched through covers, two runs.'},
+    {r:1,w:false,desc:'Pushed to mid-off, rotates strike.'},
+    {r:0,w:true, desc:'Caught at cover! Wicket!'},
+  ],
+  pull:[
+    {r:6,w:false,desc:'Pulled over square leg — MASSIVE SIX!'},
+    {r:4,w:false,desc:'Flat pull, races to the boundary!'},
+    {r:1,w:false,desc:'Pulled to fine leg, single.'},
+    {r:0,w:true, desc:'Top edge! Caught at fine leg! OUT!'},
+  ],
+  sweep:[
+    {r:4,w:false,desc:'Swept fine for FOUR!'},
+    {r:2,w:false,desc:'Swept to square leg, two runs.'},
+    {r:0,w:false,desc:'Missed the sweep, dot ball.'},
+    {r:0,w:true, desc:'LBW! Missed the sweep! OUT!'},
+  ],
+  cut:[
+    {r:4,w:false,desc:'Cut hard through point — FOUR!'},
+    {r:3,w:false,desc:'Guided late, three runs.'},
+    {r:1,w:false,desc:'Cut to third man, one.'},
+    {r:0,w:true, desc:'Outside edge, caught by keeper! OUT!'},
+  ],
+  loft:[
+    {r:6,w:false,desc:'HUGE lofted drive over long-on — SIX!'},
+    {r:6,w:false,desc:'Cleared the rope at midwicket — SIX!'},
+    {r:4,w:false,desc:'Just clears the infield — FOUR!'},
+    {r:0,w:true, desc:'Caught at long-off! Gone!'},
+  ],
+  defence:[
+    {r:0,w:false,desc:'Solid forward defence. Good ball.'},
+    {r:0,w:false,desc:'Played back — good technique.'},
+    {r:1,w:false,desc:'Defensive push, sneaks a single.'},
+  ],
+};
+
+let awaitShot=true;
+let pwrIv=null,pwrV=0,pwrDir=1;
+
+function startPwr(){
+  clearInterval(pwrIv);pwrV=0;pwrDir=1;
+  pwrIv=setInterval(()=>{
+    pwrV+=pwrDir*2.8;
+    if(pwrV>=100){pwrV=100;pwrDir=-1;}
+    if(pwrV<=0){pwrV=0;pwrDir=1;}
+    const el=document.getElementById('pwrFill');if(el)el.style.width=pwrV+'%';
+  },28);
+}
+
+function playShot(type){
+  if(G.live||!awaitShot)return;
+  awaitShot=false;clearInterval(pwrIv);
+  const el=document.getElementById('pwrFill');if(el)el.style.width='0%';
+
+  const opts=SHOTS[type]||SHOTS.drive;
+  const w=[.35,.30,.24,.11];
+  const rnd=Math.random();let cum=0,res=opts[opts.length-1];
+  for(let i=0;i<Math.min(opts.length,w.length);i++){cum+=w[i];if(rnd<cum){res=opts[i];break;}}
+
+  // Animations
+  bowlAnimT.on=true;bowlAnimT.t=0;
+  setTimeout(()=>{
+    batAnimT.on=true;batAnimT.t=0;batAnimT.type=type;
+    launchBall(res);
+    showBanner(res);
+    updateSimScore(res);
+    if(res.r>=6||(res.r===0&&res.w)){
+      celebT.on=true;celebT.t=0;celebT.type=res.r>=6?'six':res.w?'wicket':'four';
+    } else if(res.r>=4){
+      celebT.on=true;celebT.t=0;celebT.type='four';
+    }
+    // Auto camera
+    if(res.r>=6)setTimeout(()=>setCamera('aerial'),100);
+    else if(res.r===4)setTimeout(()=>setCamera('broadcast'),80);
+    else setTimeout(()=>setCamera('batting'),80);
+    setTimeout(()=>setCamera(G.cam),2400);
+  },600);
+
+  setTimeout(()=>{awaitShot=true;startPwr();},2800);
+}
+
+function launchBall(res){
+  const start=new THREE.Vector3(0,.8,-20);
+  let end;
+  if(res.r>=6) end=new THREE.Vector3((Math.random()-.5)*60,.1,-60+Math.random()*20);
+  else if(res.r===4) end=new THREE.Vector3((Math.random()-.5)*50,.1,-48+Math.random()*12);
+  else if(res.w) end=new THREE.Vector3((Math.random()-.5)*3,.1,3);
+  else end=new THREE.Vector3((Math.random()-.5)*14,.1,-12-Math.random()*10);
+  ballMesh.position.copy(start);
+  ballAnim.on=true;ballAnim.t=0;ballAnim.start.copy(start);ballAnim.end.copy(end);
+  ballAnim.h=res.r>=6?20:res.r===4?5:1.5;
+}
+
+// ─── Sim score state ───
+const sim={runs:0,wkts:0,balls:0,overs:0,crr:0,b1:{name:'R Sharma',runs:0,balls:0,fours:0,sixes:0},b2:{name:'V Kohli',runs:0,balls:0,fours:0,sixes:0},bw:{name:'P Cummins',overs:'0',wickets:0,runs:0,economy:'0.00'},curOver:[]};
+
+function updateSimScore(res){
+  if(res.w){sim.wkts++;sim.balls++;}
+  else{sim.runs+=res.r;sim.balls++;sim.b1.runs+=res.r;sim.b1.balls++;
+    if(res.r===4)sim.b1.fours++;else if(res.r===6)sim.b1.sixes++;
+  }
+  if(sim.balls%6===0){sim.overs++;sim.curOver=[];}
+  else sim.curOver.push(res.w?'W':String(res.r));
+  sim.crr=sim.balls>0?(sim.runs/(sim.balls/6)).toFixed(2):'0.00';
+  sim.b1.sr=sim.b1.balls>0?(sim.b1.runs*100/sim.b1.balls).toFixed(2):'0.00';
+
+  const ov=(Math.floor(sim.balls/6)+(sim.balls%6)/10).toFixed(1);
+  setST('tscore1',sim.runs+'-'+sim.wkts);setST('tovers1','('+ov+')');
+  setST('sCRR',sim.crr);setST('b2crr',sim.crr);
+  renderBars(sim.curOver,sim.overs+1);
+  updateBottomBar(sim.b1,sim.b2,sim.bw);
+}
+
+function initSim(){
+  setST('tname1',G.teamA.name.toUpperCase());setST('tname2',G.teamB.name.toUpperCase());
+  setST('flag1',G.teamA.flag);setST('flag2',G.teamB.flag);
+  setST('tscore1','0-0');setST('tscore2','—');
+  setST('sFmt',G.fmt);
+  setST('sbadge','LIVE');
+  sim.b1.name=G.teamA.name==='India'?'R Sharma':'Opener 1';
+  sim.b2.name=G.teamA.name==='India'?'V Kohli':'Opener 2';
+  sim.bw.name=G.teamB.name==='Australia'?'P Cummins':'Bowler';
+  updateBottomBar(sim.b1,sim.b2,sim.bw);
+  renderBars([],1);
+  startPwr();
+}
+
+// ═══════════════════════════════════════════════════════
+//  HUD HELPERS
+// ═══════════════════════════════════════════════════════
+function setST(id,v){const e=document.getElementById(id);if(e&&e.textContent!==String(v))e.textContent=String(v)}
+function initHUD(){setST('tname1',G.teamA.name.toUpperCase());setST('tname2',G.teamB.name.toUpperCase())}
+
+function setFlag(id,url){
+  const el=document.getElementById(id);if(!el)return;
+  if(url&&url.startsWith('http')){el.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentNode.textContent='🏏'">`;}
+  else el.textContent=url||'🏏';
+}
+// ══════════════════════════════════════════════
+// CARTOON PORTRAIT SYSTEM — screenshot style
+// ══════════════════════════════════════════════
+const portraitDefs=[
+  {id:'portrait1',role:'bat',skin:'#C68642',helmet:'#002D9C',jersey:'#003087',accent:'#FF8200',cap:null},
+  {id:'portrait2',role:'bat',skin:'#8D5524',helmet:'#1B3D6B',jersey:'#003087',accent:'#FF8200',cap:null},
+  {id:'portrait3',role:'bowl',skin:'#5C3317',helmet:null,jersey:'#006400',accent:'#FFFFFF',cap:'#004000'},
+];
+
+function shadeHex(h,p){
+  let r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);
+  return '#'+[Math.max(0,Math.min(255,r+p)),Math.max(0,Math.min(255,g+p)),Math.max(0,Math.min(255,b+p))].map(v=>v.toString(16).padStart(2,'0')).join('');
+}
+
+function drawPortrait(canvasId, opts){
+  const cv=document.getElementById(canvasId); if(!cv)return;
+  const c=cv.getContext('2d'), W=cv.width||130, H=cv.height||200;
+  c.clearRect(0,0,W,H);
+  const sk=opts.skin||'#C68642', jc=opts.jersey||'#003087', ja=opts.accent||'#FF8200';
+  const hl=opts.helmet||null, cp=opts.cap||null, role=opts.role||'bat';
+  const mx=W/2, hr=32, hx=mx, hy=H*0.40;
+
+  // ── Jersey body ──
+  const sy=H*0.66;
+  const jg=c.createLinearGradient(mx-50,sy,mx+50,H);
+  jg.addColorStop(0,jc); jg.addColorStop(1,shadeHex(jc,-25));
+  c.beginPath(); c.moveTo(mx-55,H+2); c.lineTo(mx+55,H+2);
+  c.lineTo(mx+42,sy); c.lineTo(mx-42,sy); c.closePath();
+  c.fillStyle=jg; c.fill();
+  // collar V
+  c.beginPath(); c.moveTo(mx-16,sy+2); c.lineTo(mx,sy+28); c.lineTo(mx+16,sy+2); c.closePath();
+  c.fillStyle=ja; c.fill();
+  // side stripes
+  c.fillStyle=ja; c.globalAlpha=0.65;
+  c.fillRect(mx-44,sy+8,8,H-sy); c.fillRect(mx+36,sy+8,8,H-sy);
+  c.globalAlpha=1;
+  // number
+  c.font='bold 19px "Bebas Neue",sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+  c.fillStyle='rgba(255,255,255,0.9)'; c.fillText(role==='bowl'?'11':(opts.num||'7'),mx,sy+52);
+
+  // ── Neck ──
+  c.beginPath();
+  c.roundRect ? c.roundRect(mx-9,H*0.59,18,H*0.09,4) : c.rect(mx-9,H*0.59,18,H*0.09);
+  c.fillStyle=sk; c.fill();
+
+  // ── Head ──
+  c.beginPath(); c.ellipse(hx+3,hy+5,hr+3,hr+4,0,0,Math.PI*2);
+  c.fillStyle='rgba(0,0,0,0.22)'; c.fill();
+  c.beginPath(); c.ellipse(hx,hy,hr,hr+4,0,0,Math.PI*2);
+  const fg=c.createRadialGradient(hx-9,hy-12,2,hx,hy,hr+4);
+  fg.addColorStop(0,shadeHex(sk,22)); fg.addColorStop(0.7,sk); fg.addColorStop(1,shadeHex(sk,-18));
+  c.fillStyle=fg; c.fill();
+
+  // ── Helmet (batsman) ──
+  if(hl){
+    c.beginPath(); c.arc(hx,hy-4,hr+4,Math.PI*0.82,Math.PI*0.05,false);
+    c.lineTo(hx+hr+8,hy+10); c.lineTo(hx-hr-8,hy+10); c.closePath();
+    const hg=c.createLinearGradient(hx-hr,hy-hr,hx+hr,hy);
+    hg.addColorStop(0,shadeHex(hl,18)); hg.addColorStop(1,shadeHex(hl,-15));
+    c.fillStyle=hg; c.fill();
+    c.strokeStyle='rgba(255,255,255,0.22)'; c.lineWidth=1.5; c.stroke();
+    // brim
+    c.beginPath(); c.moveTo(hx-hr-5,hy+9); c.lineTo(hx+hr+5,hy+9);
+    c.strokeStyle='rgba(255,255,255,0.45)'; c.lineWidth=3; c.stroke();
+    // grille bars
+    c.strokeStyle='#FFD700'; c.lineWidth=2; c.lineCap='round';
+    for(let gi=0;gi<4;gi++){
+      c.beginPath(); c.moveTo(hx+9+gi*5,hy+4); c.lineTo(hx+7+gi*5,hy+20); c.stroke();
+    }
+    c.beginPath(); c.moveTo(hx+7,hy+12); c.lineTo(hx+30,hy+12); c.stroke();
+    // chin strap
+    c.beginPath(); c.moveTo(hx-hr+4,hy+14);
+    c.quadraticCurveTo(hx-hr-4,hy+25,hx-hr+8,hy+33);
+    c.strokeStyle=hl; c.lineWidth=3.5; c.stroke();
+  }
+
+  // ── Cap (bowler) ──
+  if(cp){
+    c.beginPath(); c.arc(hx,hy-6,hr+3,Math.PI*0.88,Math.PI*0.12,false);
+    c.lineTo(hx+hr+6,hy+2); c.lineTo(hx-hr-6,hy+2); c.closePath();
+    const cg2=c.createLinearGradient(hx-hr,hy-hr,hx+hr,hy);
+    cg2.addColorStop(0,shadeHex(cp,15)); cg2.addColorStop(1,cp);
+    c.fillStyle=cg2; c.fill();
+    // peak
+    c.beginPath(); c.moveTo(hx+hr-6,hy-2);
+    c.quadraticCurveTo(hx+hr+18,hy+4,hx+hr+13,hy+13);
+    c.lineTo(hx+hr-2,hy+13); c.closePath(); c.fillStyle=cp; c.fill();
+    c.strokeStyle='rgba(255,255,255,0.3)'; c.lineWidth=1; c.stroke();
+    c.beginPath(); c.moveTo(hx-hr-4,hy+2); c.lineTo(hx+hr+4,hy+2);
+    c.strokeStyle='rgba(255,255,255,0.4)'; c.lineWidth=2.5; c.stroke();
+  }
+
+  // ── Eyes ──
+  const ey=hy+5;
+  [[-11,1],[ 11,-1]].forEach(([ex,dx])=>{
+    c.beginPath(); c.ellipse(hx+ex,ey,7,6,ex<0?0.15:-0.15,0,Math.PI*2);
+    c.fillStyle='#fff'; c.fill();
+    c.beginPath(); c.arc(hx+ex+dx,ey+0.5,3.5,0,Math.PI*2); c.fillStyle='#2C1810'; c.fill();
+    c.beginPath(); c.arc(hx+ex+dx,ey+0.5,1.8,0,Math.PI*2); c.fillStyle='#000'; c.fill();
+    c.beginPath(); c.arc(hx+ex+dx+1,ey-1.2,1.2,0,Math.PI*2); c.fillStyle='#fff'; c.fill();
+    // lashes
+    c.strokeStyle='#222'; c.lineWidth=1.2; c.lineCap='round';
+    for(let li=-2;li<=2;li++){
+      c.beginPath(); c.moveTo(hx+ex+li*1.4,ey-5.5); c.lineTo(hx+ex+li*1.8,ey-7.5); c.stroke();
+    }
+  });
+
+  // ── Eyebrows ──
+  c.strokeStyle='#2C1810'; c.lineWidth=2.8; c.lineCap='round';
+  [[-11],[11]].forEach(([cx])=>{
+    const s=cx<0?1:-1;
+    c.beginPath(); c.moveTo(hx+cx-8,ey-9+s); c.quadraticCurveTo(hx+cx,ey-11,hx+cx+8,ey-9-s); c.stroke();
+  });
+
+  // ── Nose ──
+  c.beginPath(); c.moveTo(hx,ey+7); c.quadraticCurveTo(hx+5,ey+14,hx+2,ey+17);
+  c.strokeStyle=shadeHex(sk,-22); c.lineWidth=1.5; c.stroke();
+  [-5,5].forEach(nx=>{
+    c.beginPath(); c.arc(hx+nx,ey+17,3,0,Math.PI*2);
+    c.fillStyle=shadeHex(sk,-18); c.fill();
+  });
+
+  // ── Mouth ──
+  c.beginPath(); c.moveTo(hx-10,ey+23); c.quadraticCurveTo(hx-3,ey+21,hx,ey+23); c.quadraticCurveTo(hx+3,ey+21,hx+10,ey+23);
+  c.strokeStyle='#7A3020'; c.lineWidth=1.5; c.stroke();
+  c.beginPath(); c.moveTo(hx-10,ey+23); c.quadraticCurveTo(hx,ey+31,hx+10,ey+23);
+  c.fillStyle='#B85040'; c.fill(); c.strokeStyle='#7A3020'; c.lineWidth=1; c.stroke();
+
+  // ── Ears ──
+  [[-1,hx-hr*0.88],[1,hx+hr*0.88]].forEach(([sd,ex])=>{
+    c.save(); c.translate(ex,hy+5); c.scale(sd,1);
+    c.beginPath(); c.ellipse(0,0,7,10,0,0,Math.PI*2); c.fillStyle=sk; c.fill();
+    c.strokeStyle='rgba(0,0,0,0.1)'; c.lineWidth=1; c.stroke();
+    c.beginPath(); c.ellipse(0,0,3.5,5.5,0,0,Math.PI*2); c.fillStyle=shadeHex(sk,-14); c.fill();
+    c.restore();
+  });
+
+  // ── Beard/stubble (bowler) ──
+  if(role==='bowl'){
+    c.beginPath(); c.arc(hx,ey+20,15,0.3,Math.PI-0.3);
+    c.fillStyle='rgba(15,8,0,0.28)'; c.fill();
+    c.beginPath(); c.moveTo(hx-10,ey+21); c.quadraticCurveTo(hx,ey+19,hx+10,ey+21);
+    c.strokeStyle='rgba(15,8,0,0.38)'; c.lineWidth=3.5; c.lineCap='round'; c.stroke();
+  }
+
+  // ── Batting gloves (batsmen) ──
+  if(role==='bat'){
+    [1,-1].forEach(sd=>{
+      c.save(); c.translate(mx+sd*33,H-22); c.scale(sd,1);
+      c.beginPath(); c.ellipse(0,0,13,16,0.2,0,Math.PI*2);
+      c.fillStyle='#CC2033'; c.fill(); c.strokeStyle='rgba(255,255,255,0.5)'; c.lineWidth=1; c.stroke();
+      for(let fi=0;fi<4;fi++){
+        c.beginPath(); c.ellipse(-6+fi*4.5,-16,3,7,fi*0.08-0.15,0,Math.PI*2);
+        c.fillStyle='#AA1020'; c.fill();
+      }
+      c.fillStyle='rgba(255,255,255,0.55)'; c.fillRect(-12,2,24,4);
+      c.restore();
+    });
+  }
+
+  // ── Cricket ball (bowler) ──
+  if(role==='bowl'){
+    const bx=mx+32,by=H-28;
+    const bg2=c.createRadialGradient(bx-4,by-5,2,bx,by,14);
+    bg2.addColorStop(0,'#E03050'); bg2.addColorStop(0.5,'#C41230'); bg2.addColorStop(1,'#7A0A18');
+    c.beginPath(); c.arc(bx,by,14,0,Math.PI*2); c.fillStyle=bg2; c.fill();
+    c.strokeStyle='rgba(255,255,255,0.75)'; c.lineWidth=1.5; c.lineCap='round';
+    for(const ang of[0.6,-0.6]){
+      c.beginPath(); c.arc(bx,by,14,ang-0.5,ang+0.5); c.stroke();
+    }
+    c.beginPath(); c.arc(bx-4,by-5,4,0,Math.PI*2);
+    c.fillStyle='rgba(255,255,255,0.18)'; c.fill();
+  }
+
+  // ── Face sheen ──
+  const fs=c.createRadialGradient(hx-12,hy-15,1,hx-8,hy-10,24);
+  fs.addColorStop(0,'rgba(255,255,255,0.2)'); fs.addColorStop(1,'rgba(255,255,255,0)');
+  c.beginPath(); c.ellipse(hx,hy,hr,hr+4,0,0,Math.PI*2); c.fillStyle=fs; c.fill();
+}
+
+function initPortraits(){
+  portraitDefs.forEach(d=>{
+    drawPortrait(d.id,{skin:d.skin,jersey:d.jersey,accent:d.accent,helmet:d.helmet,cap:d.cap,role:d.role});
+  });
+}
+
+function updatePortraitColors(tA,tB){
+  const h=n=>'#'+n.toString(16).padStart(6,'0');
+  portraitDefs[0].jersey=h(tA.c1); portraitDefs[0].accent=h(tA.acc); portraitDefs[0].helmet=h(tA.c1);
+  portraitDefs[1].jersey=h(tA.c1); portraitDefs[1].accent=h(tA.acc); portraitDefs[1].helmet=h(tA.c1);
+  portraitDefs[2].jersey=h(tB.c1); portraitDefs[2].accent=h(tB.acc||tB.c2); portraitDefs[2].cap=h(tB.c1);
+  portraitDefs.forEach(d=>{
+    drawPortrait(d.id,{skin:d.skin,jersey:d.jersey,accent:d.accent,helmet:d.helmet,cap:d.cap,role:d.role});
+  });
+}
+
+function setPlayerPhoto(wid,url,fb){
+  const w=document.getElementById(wid);if(!w)return;
+  if(url&&url.startsWith('http')){
+    const img=document.createElement('img');
+    img.src=url;
+    img.style.cssText='width:100%;height:100%;object-fit:cover;object-position:top center;position:absolute;top:0;left:0;z-index:2;';
+    img.onerror=()=>img.remove();
+    const old=w.querySelector('img');if(old)old.remove();
+    w.appendChild(img);
+  }
+}
+
+function renderBars(balls,overNum){
+  // Row 2
+  const crr=document.getElementById('b2crr');if(crr)crr.textContent=liveData.crr||sim.crr||'—';
+  const rrr=document.getElementById('b2rrr');if(rrr)rrr.textContent=liveData.rrr||'—';
+  const ps=document.getElementById('b2pship');if(ps)ps.textContent=liveData.partnership||'—';
+  const lw=document.getElementById('b2lw');if(lw)lw.textContent=liveData.last_wicket||'—';
+  const nd=document.getElementById('b2need');
+  if(nd) nd.textContent=liveData.target?(liveData.need?`${(liveData.team1&&liveData.team1.name||'').toUpperCase()} NEED ${liveData.need} RUNS IN ${liveData.need_balls||'?'} BALLS`:''):'';
+
+  // Row 3: over balls
+  const bc=document.getElementById('b3balls');if(!bc)return;
+  bc.innerHTML='';
+  let tot=0;
+  (balls||[]).forEach(b=>{
+    const s=String(b).trim().toUpperCase();
+    const d=document.createElement('div');
+    let cl='ob ';
+    if(s==='W')cl+='ob-W';
+    else if(s==='4')cl+='ob-4';
+    else if(s==='6')cl+='ob-6';
+    else if(s==='WD')cl+='ob-WD';
+    else if(s==='NB')cl+='ob-NB';
+    else if(['1','2','3'].includes(s))cl+='ob-'+s;
+    else if(s==='0')cl+='ob-0';
+    else cl+='ob-dot';
+    d.className=cl;d.textContent=s||'·';
+    bc.appendChild(d);
+    const n=parseInt(s);if(!isNaN(n))tot+=n;
+  });
+  setST('b3tot',tot);
+  setST('b3lbl','OVER '+(overNum||1)+':');
+}
+
+function updateBottomBar(b1,b2,bw){
+  if(!b1)return;
+  setST('b1name',b1.name||'BATSMAN 1');
+  setST('b1big',(b1.runs||0)+'('+(b1.balls||0)+')');
+  setST('b1f',b1.fours||0);setST('b1s',b1.sixes||0);setST('b1sr',b1.sr||'—');
+  setPlayerPhoto('b1photo',b1.photo||'','🏏');
+
+  if(b2){
+    setST('b2name',b2.name||'BATSMAN 2');
+    setST('b2big',(b2.runs||0)+'('+(b2.balls||0)+')');
+    setST('b2f',b2.fours||0);setST('b2s',b2.sixes||0);setST('b2sr',b2.sr||'—');
+    setPlayerPhoto('b2photo',b2.photo||'','🏏');
+  }
+  if(bw){
+    setST('bwname',bw.name||'BOWLER');
+    setST('bwbig',(bw.wickets||0)+'-'+(bw.runs||0)+'('+(bw.overs||0)+')');
+    setST('bwov',bw.overs||'0');setST('bwmn',bw.maidens||0);setST('bweco',bw.economy||'—');
+    setPlayerPhoto('bwphoto',bw.photo||'','🎳');
+  }
+}
+
+function showBanner(res){
+  const bn=document.getElementById('shotBanner');
+  const tx=document.getElementById('shotTxt');
+  const sb=document.getElementById('shotSub');
+  if(res.r===6){tx.textContent='SIX!';tx.style.color='#FFD700';}
+  else if(res.r===4){tx.textContent='FOUR!';tx.style.color='#00cfff';}
+  else if(res.w){tx.textContent='WICKET!';tx.style.color='#ff4040';}
+  else if(res.r===0){tx.textContent='DOT';tx.style.color='#888';}
+  else{tx.textContent=res.r+' RUN'+(res.r>1?'S':'');tx.style.color='#00E676';}
+  sb.textContent=res.desc;
+  bn.classList.add('show');
+  setTimeout(()=>bn.classList.remove('show'),2200);
+}
+
+// ═══════════════════════════════════════════════════════
+//  LIVE CRICBUZZ DATA — via Railway backend scraper
+// ═══════════════════════════════════════════════════════
+let liveIv=null;
+
+// Auto-detect: if running on Railway use same origin, else localhost
+const API_BASE = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+  ? 'http://localhost:3000'
+  : '';  // empty = same origin (Railway)
+
+async function fetchAllMatches(){
+  try{
+    const r = await fetch(API_BASE + '/api/live', {signal: AbortSignal.timeout(8000)});
+    if(!r.ok) return null;
+    return await r.json();
+  }catch(e){ return null; }
+}
+
+async function fetchScorecard(matchId){
+  try{
+    const r = await fetch(API_BASE + '/api/scorecard/' + matchId, {signal: AbortSignal.timeout(8000)});
+    if(!r.ok) return null;
+    return await r.json();
+  }catch(e){ return null; }
+}
+
+function startLive(){
+  fetchLive();
+  liveIv=setInterval(fetchLive, 15000);
+  // Also populate match picker on start
+  loadMatchPicker();
+}
+
+async function loadMatchPicker(){
+  const data = await fetchAllMatches();
+  if(!data || !data.matches || data.matches.length === 0) return;
+  const matches = data.matches;
+  // Auto-select first live match if none selected
+  if(!G.matchId && matches.length > 0){
+    const live = matches.find(m => m.isLive) || matches[0];
+    if(live && live.matchId){
+      G.matchId = live.matchId;
+      console.log('[Live] Auto-selected match:', live.team1, 'vs', live.team2, '| ID:', live.matchId);
+      setST('liTxt', live.team1 + ' vs ' + live.team2);
+      // Apply basic team names to scoreboard
+      if(live.team1) setST('tname1', live.team1.toUpperCase().slice(0,10));
+      if(live.team2) setST('tname2', live.team2.toUpperCase().slice(0,10));
+      if(live.score1) setST('tscore1', live.score1);
+      if(live.score2) setST('tscore2', live.score2);
+      if(live.status){
+        const sb=document.getElementById('sbadge');
+        if(sb){
+          sb.textContent = live.status.slice(0,20);
+          sb.className = 'tb-pill ' + (live.isLive ? 'pill-live' : 'pill-break');
+        }
+      }
+    }
+  }
+}
+
+async function fetchLive(){
+  // 1. Get all live matches + pick the active one
+  const data = await fetchAllMatches();
+  if(!data) { setST('liTxt','Server starting...'); return; }
+
+  const matches = data.matches || [];
+  if(matches.length === 0){ setST('liTxt','No live matches'); return; }
+
+  // Pick match: prefer one matching G.matchId, else first live
+  let match = G.matchId ? matches.find(m => m.matchId === G.matchId) : null;
+  if(!match) match = matches.find(m => m.isLive) || matches[0];
+  if(!match) return;
+
+  G.matchId = match.matchId;
+
+  // Update scoreboard from match data
+  if(match.team1) setST('tname1', match.team1.toUpperCase().slice(0,12));
+  if(match.team2) setST('tname2', match.team2.toUpperCase().slice(0,12));
+  if(match.score1) setST('tscore1', match.score1);
+  if(match.score2) setST('tscore2', match.score2);
+
+  const sb = document.getElementById('sbadge');
+  if(sb && match.status){
+    sb.textContent = match.status.slice(0,22);
+    sb.className = 'tb-pill ' + (match.isLive ? 'pill-live' :
+      match.status.toLowerCase().includes('won') ? 'pill-win' : 'pill-break');
+  }
+
+  setST('liTxt', 'LIVE • ' + new Date().toLocaleTimeString());
+
+  // 2. Get scorecard for player stats
+  if(match.matchId){
+    const sc = await fetchScorecard(match.matchId);
+    if(sc && (sc.batsmen?.length > 0 || sc.bowlers?.length > 0)){
+      applyScorecard(sc);
+    }
+  }
+}
+
+function applyScorecard(sc){
+  // Apply batsmen to bottom bar
+  const bat = sc.batsmen || [];
+  const bowl = sc.bowlers || [];
+
+  // Find currently batting (not out) players
+  const batting = bat.filter(b => !b.isOut && b.name && b.runs !== undefined);
+  const b1 = batting[0] || bat[0];
+  const b2 = batting[1] || bat[1];
+  // Current bowler = last in bowling list
+  const bwl = bowl[bowl.length - 1];
+
+  if(b1) updateBottomBar(
+    {name: b1.name, runs: b1.runs, balls: b1.balls, fours: b1.fours, sixes: b1.sixes, sr: b1.sr},
+    b2 ? {name: b2.name, runs: b2.runs, balls: b2.balls, fours: b2.fours, sixes: b2.sixes, sr: b2.sr} : null,
+    bwl ? {name: bwl.name, overs: bwl.overs, maidens: bwl.maidens, runs: bwl.runs, wickets: bwl.wickets, economy: bwl.economy} : null
+  );
+}
+
+function parseLive(html){
+  const d={team1:{},team2:{},batsman1:{},batsman2:{},bowler:{},last_over_balls:[],crr:'',rrr:'',target:'',partnership:'',last_wicket:'',match_status:'LIVE',match_format:'T20',current_over:1};
+
+  // Team scores from title/meta
+  const meta=html.match(/<meta[^>]+name="description"[^>]+content="([^"]{20,250})"/i);
+  if(meta){
+    const desc=meta[1];
+    const m1=desc.match(/([A-Z][A-Za-z\s]{2,18}?)\s+(\d+\/\d+)\s*\(\s*([\d.]+)\s*\)/);
+    if(m1){d.team1.name=m1[1].trim();const sp=m1[2].split('/');d.team1.score=sp[0]+'-'+sp[1];d.team1.overs=m1[3];}
+  }
+
+  // CRR / RRR / Target
+  const crr=html.match(/currentRunRate[^:]*:\s*([\d.]+)/);if(crr)d.crr=parseFloat(crr[1]).toFixed(2);
+  const rrr=html.match(/requiredRunRate[^:]*:\s*([\d.]+)/);if(rrr)d.rrr=parseFloat(rrr[1]).toFixed(2);
+  const tgt=html.match(/"target"\s*:\s*(\d+)/);if(tgt)d.target=tgt[1];
+
+  // Partnership
+  const pb=html.match(/partnerShip.{0,60}?runs.{0,10}?:(\d+).{0,40}?balls.{0,10}?:(\d+)/);
+  if(pb)d.partnership=pb[1]+'('+pb[2]+')';
+
+  // Status
+  const cs=html.match(/customStatus[^"]*"([^"\\]{3,60})"/);
+  if(cs)d.match_status=cs[1].trim().slice(0,40);
+
+  // Last wicket
+  const lw=html.match(/lastWicket[^"]*"([^"\\]{5,100})"/);
+  if(lw)d.last_wicket=lw[1].replace(/\\+["']/g,'').trim().slice(0,60);
+
+  // Format
+  for(const fmt of['T20I','T20','ODI','Test','T10']){
+    if(html.includes(fmt)){d.match_format=fmt;break;}
+  }
+
+  // Batsmen
+  const b1=extractPlayer(html,'batsmanStriker');
+  const b2=extractPlayer(html,'batsmanNonStriker');
+  const bw=extractPlayer(html,'bowlerNonStriker')||extractPlayer(html,'bowlerStriker');
+  if(b1){d.batsman1=b1;fetchPhoto(b1.name,b1.pid,b1.slug,'b1photo','b1name','🏏');}
+  if(b2){d.batsman2=b2;fetchPhoto(b2.name,b2.pid,b2.slug,'b2photo','b2name','🏏');}
+  if(bw){d.bowler=bw;fetchPhoto(bw.name,bw.pid,bw.slug,'bwphoto','bwname','🎳');}
+
+  // Over balls
+  const om=html.match(/last_over_balls[^:]*:\s*\[([^\]]{1,120})\]/);
+  if(om)d.last_over_balls=om[1].replace(/['"]/g,'').split(',').map(s=>s.trim()).filter(Boolean);
+
+  // Current over
+  const ovm=html.match(/current_over[^:]*:\s*(\d+)/);if(ovm)d.current_over=parseInt(ovm[1]);
+
+  liveData=d;
+  applyLive(d);
+}
+
+function extractPlayer(html,key){
+  const idx=html.indexOf(key);if(idx<0)return null;
+  const chunk=html.substring(idx,idx+700);
+  const nm=chunk.match(/"name"\s*:\s*"([^"\\]{2,50})"/);if(!nm)return null;
+  const rn=chunk.match(/"runs"\s*:\s*(\d+)/);
+  const bl=chunk.match(/"balls"\s*:\s*(\d+)/);
+  const fo=chunk.match(/"fours"\s*:\s*(\d+)/);
+  const sx=chunk.match(/"sixes"\s*:\s*(\d+)/);
+  const sr=chunk.match(/"strikeRate"\s*:\s*"?([\d.]+)"?/);
+  const ov=chunk.match(/"overs"\s*:\s*"?([\d.]+)"?/);
+  const wk=chunk.match(/"wickets"\s*:\s*(\d+)/);
+  const mn=chunk.match(/"maidens"\s*:\s*(\d+)/);
+  const ec=chunk.match(/"economy"\s*:\s*"?([\d.]+)"?/);
+  const pi=chunk.match(/"id"\s*:\s*(\d+)/);
+  const sl=chunk.match(/\/profiles\/(\d+)\/([\w-]+)/);
+  return{name:nm[1],runs:rn?parseInt(rn[1]):0,balls:bl?parseInt(bl[1]):0,fours:fo?parseInt(fo[1]):0,sixes:sx?parseInt(sx[1]):0,sr:sr?sr[1]:'0.00',overs:ov?ov[1]:'0',wickets:wk?parseInt(wk[1]):0,maidens:mn?parseInt(mn[1]):0,economy:ec?ec[1]:'0.00',pid:pi?pi[1]:'',slug:sl?sl[2]:'',photo:''};
+}
+
+const photoCache={};
+async function fetchPhoto(name,pid,slug,photoEl,nameEl,fallback){
+  if(!name)return;
+  setST(nameEl,name.toUpperCase());
+  if(photoCache[name]){setPlayerPhoto(photoEl,photoCache[name],fallback);return;}
+  try{
+    const q=encodeURIComponent(name.toLowerCase().replace(/ /g,'+'));
+    const apiUrl=`https://www.cricbuzz.com/api/cricket-search/v2/search?query=${q}&start=0&limit=5`;
+    const proxy=`https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
+    const r=await fetch(proxy,{signal:AbortSignal.timeout(6000)});
+    if(!r.ok)throw new Error('no resp');
+    const outer=await r.json();
+    const data=JSON.parse(outer.contents||'{}');
+    const results=data.results||data.entity||[];
+    for(const item of results){
+      if(String(item.type||'').toLowerCase()!=='player')continue;
+      const imgId=item.imageId||item.faceImageId||item.imgId;
+      const s=item.slug||slug;
+      if(imgId){
+        const url=`https://static.cricbuzz.com/a/img/v1/i1/c${imgId}/${s}.jpg?d=high&p=gthumb`;
+        photoCache[name]=url;
+        setPlayerPhoto(photoEl,url,fallback);
+        return;
+      }
+    }
+  }catch(e){}
+  // Fallback: direct CDN
+  if(pid&&slug){
+    const url=`https://static.cricbuzz.com/a/img/v1/i1/c${pid}/${slug}.jpg?d=high&p=gthumb`;
+    photoCache[name]=url;setPlayerPhoto(photoEl,url,fallback);
+  }
+}
+
+function applyLive(d){
+  const t1=d.team1||{},t2=d.team2||{};
+  if(t1.name){setST('tname1',t1.name.toUpperCase());G.teamA={...G.teamA,name:t1.name};}
+  if(t2.name){setST('tname2',t2.name.toUpperCase());G.teamB={...G.teamB,name:t2.name};}
+  if(t1.score)setST('tscore1',t1.score.replace('/','-'));
+  if(t1.overs)setST('tovers1','('+t1.overs+')');
+  if(t2.score)setST('tscore2',t2.score.replace('/','-'));
+  if(d.crr)setST('sCRR',d.crr);
+  if(d.match_format)setST('sFmt',d.match_format);
+  const sb=document.getElementById('sbadge');
+  if(sb){const s=d.match_status||'LIVE';sb.textContent=s;sb.className='tb-pill '+(s.toLowerCase().includes('won')?'pill-win':s.toLowerCase().includes('live')?'pill-live':'pill-break');}
+
+  renderBars(d.last_over_balls,d.current_over);
+  updateBottomBar(d.batsman1,d.batsman2,d.bowler);
+  setST('b2lw',(d.last_wicket||'—').slice(0,40));
+  setST('b2rrr',d.rrr||'—');
+  setST('b2pship',d.partnership||'—');
+
+  // React: SIX/FOUR/WICKET from last ball
+  const balls=d.last_over_balls||[];
+  if(balls.length>0){
+    const last=balls[balls.length-1];
+    if(last==='6'&&!celebT.on){celebT.on=true;celebT.t=0;celebT.type='six';}
+    else if(last==='W'&&!celebT.on){celebT.on=true;celebT.t=0;celebT.type='wicket';}
+    else if(last==='4'&&!celebT.on){celebT.on=true;celebT.t=0;celebT.type='four';}
+  }
+}
+
+window.addEventListener('beforeunload',()=>{clearInterval(liveIv);cancelAnimationFrame(animId)});
+</script>
+</body>
+</html>
